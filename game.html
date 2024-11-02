@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Choix du Niveau - Anime Guesser</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- En-tête de la page -->
+    <div class="header">
+        <h1>Choisissez votre niveau de difficulté</h1>
+    </div>
+
+    <!-- Section de sélection de niveau -->
+    <div class="level-selection">
+        <div class="level-card" onclick="startGame('very_easy')">
+            <h2>Très Simple</h2>
+            <p class="level-description">Seulement les animés les plus populaires.</p>
+        </div>
+        <div class="level-card" onclick="startGame('easy')">
+            <h2>Simple</h2>
+            <p class="level-description">Un peu plus de challenge, mais encore abordable.</p>
+        </div>
+        <div class="level-card" onclick="startGame('normal')">
+            <h2>Normal</h2>
+            <p class="level-description">Préparez-vous à creuser dans votre mémoire.</p>
+        </div>
+        <div class="level-card" onclick="startGame('hard')">
+            <h2>Difficile</h2>
+            <p class="level-description">Des animés moins connus et des OAV inclus.</p>
+        </div>
+        <div class="level-card" onclick="startGame('impossible')">
+            <h2>Impossible</h2>
+            <p class="level-description">Tout est permis. Bonne chance !</p>
+        </div>
+    </div>
+
+    <!-- Bouton pour revenir à l'accueil -->
+    <div class="navigation-buttons">
+        <button id="home-button">Retour au Menu Principal</button>
+    </div>
+
+    <!-- Script pour naviguer vers la page de jeu avec le niveau sélectionné -->
+    <script>
+        function startGame(level) {
+            window.location.href = `gameplay.html?level=${level}`;
+        }
+
+        // Gestion du bouton "Retour au Menu Principal"
+        document.getElementById('home-button').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
