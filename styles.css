@@ -376,3 +376,679 @@ button:hover {
 #result-message {
     font-family: 'Poppins', sans-serif;
 }
+
+.select-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+}
+
+.select-container h1 {
+    font-size: 3em;
+    margin-bottom: 50px;
+    color: #ffffff; /* Titre en blanc */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Styles pour le groupe de boutons */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* Styles pour les boutons */
+.gender-button {
+    width: 80%;
+    max-width: 600px;
+    padding: 30px 0;
+    margin: 20px 0;
+    font-size: 2em;
+    color: #ffffff;
+    border: none;
+    border-radius: 15px; /* Coins légèrement arrondis */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Couleurs spécifiques */
+.gender-button.male {
+    background-color: rgb(0, 0, 128); /* Bleu marine */
+}
+
+.gender-button.female {
+    background-color: #FF66FF; /* Rose */
+}
+
+.gender-button.all {
+    background-color: #F5F5DC; /* Blanc cassé */
+    color: #333333; /* Texte en gris foncé pour le contraste */
+}
+
+/* Effets au survol */
+.gender-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Effets lors du clic */
+.gender-button:active {
+    transform: scale(0.98);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour petits écrans */
+@media (max-width: 600px) {
+    .gender-button {
+        font-size: 1.5em;
+        padding: 20px 0;
+    }
+}
+
+.sop-game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Informations du personnage */
+.sop-character-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sop-character-name {
+    font-size: 3em; /* Augmentation de la taille de police */
+    margin-bottom: 10px; /* Réduction de la marge inférieure pour le rapprocher de l'image */
+    margin-top: 10px; /* Ajout de marge supérieure pour le positionner un peu plus haut */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Image du personnage */
+.sop-character-image img {
+    width: auto;
+    height: 80vh; /* L'image occupe 70% de la hauteur de la fenêtre */
+    max-width: 100%; /* Empêche l'image de dépasser la largeur de l'écran */
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+    object-fit: contain; /* Maintient les proportions de l'image */
+}
+
+/* Conteneur des boutons */
+.sop-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px; /* Réduit l'espace entre l'image et les boutons */
+    flex-wrap: wrap;
+}
+
+/* Styles des boutons */
+.sop-action-button {
+    width: 220px;
+    padding: 20px;
+    margin: 10px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Couleurs spécifiques des boutons */
+.sop-pass-btn {
+    background-color: #000000; /* Noir */
+}
+
+.sop-smash-btn {
+    background-color: #28a745; /* Vert */
+}
+
+.sop-ultra-smash-btn {
+    background-color: #FFD700; /* Or */
+    color: #000000; /* Texte en noir pour un meilleur contraste */
+}
+
+/* Effets au survol */
+.sop-action-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Effets lors du clic */
+.sop-action-button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Suppression du changement de couleur au survol */
+.sop-action-button:hover {
+    /* Nous supprimons background-color: inherit; pour conserver la couleur de fond */
+}
+
+/* Responsivité */
+@media (max-width: 768px) {
+    .sop-action-button {
+        width: 180px;
+        padding: 15px;
+        font-size: 1.2em;
+    }
+
+    .sop-character-name {
+        font-size: 2em;
+    }
+
+    .sop-character-image img {
+        height: 50vh; /* Ajustement de la taille de l'image sur petits écrans */
+    }
+}
+
+.sop-results-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #1a1a1a;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+/* Catégories */
+.sop-categories {
+    display: flex;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.sop-category-title {
+    flex: 1;
+    text-align: center;
+    font-size: 2em;
+    padding: 15px 0;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.sop-pass-title {
+    background-color: #000000;
+}
+
+.sop-smash-title {
+    background-color: #28a745;
+}
+
+.sop-ultra-smash-title {
+    background-color: #FFD700;
+    color: #000000;
+}
+
+/* Conteneur des colonnes */
+.sop-columns-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.sop-columns {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    overflow: hidden;
+    border-top: 2px solid #ffffff;
+}
+
+.sop-column {
+    width: 33.33%;
+    overflow-y: auto;
+    text-align: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* Ligne de séparation entre les colonnes */
+.sop-column:not(:last-child) {
+    border-right: 1px solid #ffffff;
+}
+
+/* Styles des items de résultats */
+.sop-result-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sop-result-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 5px;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+.sop-result-name {
+    font-size: 1.5em;
+    text-align: left;
+    color: #ffffff;
+}
+
+/* Bouton Recommencer */
+.sop-restart-button {
+    margin: 20px auto;
+    padding: 15px 30px;
+    font-size: 1.5em;
+    color: #ffffff;
+    background-color: #28a745;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.sop-restart-button:hover {
+    background-color: #218838;
+}
+
+.sop-restart-button:active {
+    background-color: #1e7e34;
+}
+
+/* Responsivité */
+@media (max-width: 768px) {
+    .sop-result-image {
+        width: 80px;
+        height: 80px;
+    }
+
+    .sop-result-name {
+        font-size: 1.3em;
+    }
+
+    .sop-restart-button {
+        font-size: 1.2em;
+        padding: 10px 20px;
+    }
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centre verticalement le contenu */
+    align-items: center;
+    min-height: 100vh; /* Prend toute la hauteur de l'écran */
+    text-align: center;
+}
+
+/* Style du titre */
+.tierlist-title {
+    font-size: 4em; /* Taille du titre pour qu’il soit imposant */
+    color: #FFD700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 165px; /* Espace accru sous le titre */
+}
+
+/* Conteneur des boutons */
+.mode-selection {
+    display: flex;
+    flex-direction: column; /* Empiler les boutons verticalement */
+    align-items: center;
+    gap: 50px; /* Espace accru entre les boutons */
+}
+
+/* Styles des boutons */
+.tierlist-button {
+    font-size: 3em; /* Agrandit encore la taille des boutons */
+    padding: 35px 90px; /* Plus de remplissage pour des boutons plus imposants */
+    width: 70%; /* Augmente la largeur des boutons */
+    max-width: 600px; /* Limite la largeur maximale pour les écrans plus grands */
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tierlist-button.gold {
+    background-color: #FFD700;
+    color: #1a1a1a;
+    box-shadow: 0px 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.tierlist-button.violet {
+    background-color: #6A0DAD;
+    color: #ffffff;
+    box-shadow: 0px 4px 15px rgba(106, 13, 173, 0.4);
+}
+
+/* Effets au survol */
+.tierlist-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.tierlist-button:active {
+    transform: scale(0.95);
+}
+
+.anime-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centre verticalement le contenu */
+    align-items: center;
+    min-height: 100vh; /* Prend toute la hauteur de l'écran */
+    text-align: center;
+}
+
+/* Style du titre pour anime_tierlist.html */
+.anime-title {
+    font-size: 4em; /* Taille imposante pour le titre */
+    color: #00CED1; /* Bleu turquoise vibrant */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 60px; /* Espace accru sous le titre */
+}
+
+/* Conteneur des boutons */
+.anime-mode-selection {
+    display: flex;
+    flex-direction: column; /* Empiler les boutons verticalement */
+    align-items: center;
+    gap: 50px; /* Espace accru entre les boutons */
+}
+
+/* Styles des boutons pour anime_tierlist.html */
+.anime-button {
+    font-size: 3em; /* Taille imposante pour les boutons */
+    padding: 35px 90px; /* Remplissage important pour des boutons imposants */
+    width: 70%; /* Largeur augmentée des boutons */
+    max-width: 600px; /* Limite la largeur maximale pour les écrans plus grands */
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Bouton vert émeraude lumineux */
+.anime-button.emerald {
+    background-color: #50C878;
+    color: #ffffff;
+    box-shadow: 0px 4px 15px rgba(80, 200, 120, 0.4);
+}
+
+/* Bouton rouge corail */
+.anime-button.coral {
+    background-color: #FF6F61;
+    color: #ffffff;
+    box-shadow: 0px 4px 15px rgba(255, 111, 97, 0.4);
+}
+
+/* Effets au survol pour les boutons */
+.anime-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.anime-button:active {
+    transform: scale(0.95);
+}
+
+/* Conteneur principal pour centrer verticalement */
+.character-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centre verticalement le contenu */
+    align-items: center;
+    min-height: 100vh; /* Prend toute la hauteur de l'écran */
+    text-align: center;
+}
+
+/* Style du titre pour character_tierlist.html */
+.character-title {
+    font-size: 4em; /* Taille imposante pour le titre */
+    color: #FFA500; /* Orange vif */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 60px; /* Espace accru sous le titre */
+}
+
+/* Conteneur des boutons */
+.character-mode-selection {
+    display: flex;
+    flex-direction: column; /* Empiler les boutons verticalement */
+    align-items: center;
+    gap: 50px; /* Espace accru entre les boutons */
+}
+
+/* Styles des boutons pour character_tierlist.html */
+.character-button {
+    font-size: 3em; /* Taille imposante pour les boutons */
+    padding: 35px 90px; /* Remplissage important pour des boutons imposants */
+    width: 70%; /* Largeur augmentée des boutons */
+    max-width: 600px; /* Limite la largeur maximale pour les écrans plus grands */
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Bouton bleu royal */
+.character-button.royal-blue {
+    background-color: #4169E1;
+    color: #ffffff;
+    box-shadow: 0px 4px 15px rgba(65, 105, 225, 0.4);
+}
+
+/* Bouton rose fuchsia */
+.character-button.fuchsia {
+    background-color: #FF00FF;
+    color: #ffffff;
+    box-shadow: 0px 4px 15px rgba(255, 0, 255, 0.4);
+}
+
+/* Effets au survol pour les boutons */
+.character-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.character-button:active {
+    transform: scale(0.95);
+}
+
+/* Conteneur principal */
+.devine-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #171717; /* Couleur choisie pour le fond */
+    color: #ffffff;
+    height: calc(100vh - 10px); /* Prend en compte la barre des tâches */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Évite la barre de défilement */
+    font-family: 'Roboto', sans-serif;
+}
+
+/* En-tête avec compteur */
+.devine-header {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    font-size: 1.5em;
+    color: #ffffff;
+    margin-bottom: 5px; /* Rapproché de l'image */
+}
+
+.devine-lives,
+.devine-score {
+    font-weight: bold;
+    padding: 8px 15px;
+    background-color: #120D16;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Conteneur de l'image */
+.devine-character-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px; /* Proche des options */
+    width: 100%;
+    height: auto;
+    overflow: hidden; /* Coupe tout débordement */
+    position: relative;
+}
+
+.devine-character-image {
+    width: 280px; /* Taille fixe de l'image */
+    height: 350px; /* Taille fixe de l'image */
+    object-fit: cover; /* Contrainte pour toutes les images */
+    border-radius: 15px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Conteneur des options */
+.devine-options-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Deux colonnes */
+    gap: 15px;
+    width: 85%;
+    justify-items: center;
+}
+
+/* Boutons d'option */
+.devine-option-button {
+    background-color: #333;
+    color: #ffffff;
+    border: none;
+    padding: 15px 20px;
+    font-size: 1.3em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 300px; /* Plus long */
+    min-height: 120px; /* Plus haut */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.devine-option-button:hover {
+    background-color: #444;
+}
+
+/* Texte des noms de personnages */
+.devine-character-name {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Texte des noms d'animé */
+.devine-anime-title {
+    font-size: 1em;
+    font-style: italic;
+    color: #888888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Bonne réponse */
+.devine-option-button.correct {
+    background-color: #28a745;
+}
+
+/* Mauvaise réponse */
+.devine-option-button.wrong {
+    background-color: #dc3545;
+}
+
+/* Écran de fin */
+.devine-game-over-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: #fff;
+    font-size: 1.5em;
+}
+
+.devine-hidden {
+    display: none;
+}
+
+.devine-game-over-screen h1 {
+    margin-bottom: 20px;
+}
+
+.devine-game-over-screen p {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+}
+
+/* Boutons de l'écran de fin */
+.devine-game-over-screen button {
+    background-color: #444;
+    color: #fff;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.4em; /* Plus lisible */
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.3s ease;
+}
+
+.devine-game-over-screen button:hover {
+    background-color: #666;
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Smash or Pass - Jeu</title>
+    <!-- Lien vers Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Lien vers Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Votre fichier CSS personnalisé -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="sop-game-container">
+        <div class="sop-character-info">
+            <h2 id="sop-character-name" class="sop-character-name"></h2>
+            <div class="sop-character-image">
+                <img id="sop-character-image" src="" alt="Character Image">
+            </div>
+        </div>
+        <div class="sop-button-container">
+            <button class="sop-action-button sop-pass-btn" onclick="recordChoice('pass')">Pass</button>
+            <button class="sop-action-button sop-smash-btn" onclick="recordChoice('smash')">Smash</button>
+            <button class="sop-action-button sop-ultra-smash-btn" onclick="recordChoice('ultraSmash')">Ultra Smash</button>
+        </div>
+    </div>
+    <script src="smash_or_pass_game.js"></script>
+</body>
+</html>

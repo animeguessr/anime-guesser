@@ -6,6 +6,8 @@ const session = require('express-session');
 const fs = require('fs');
 const levenshtein = require('fast-levenshtein');
 const unaccent = require('unaccent');
+const imageDirectory = path.join('C:', 'Animeguesser', 'caractere');
+app.use('/caractere', express.static(imageDirectory));
 
 // Connexion à la base de données
 const pool = new Pool({
@@ -355,6 +357,183 @@ app.get('/anime-suggestions', async (req, res) => {
         res.status(500).send('Erreur serveur');
     }
 });
+
+const absoluteImagePath = path.resolve('C:/Animeguesser/caractere');
+app.use('/caractere', express.static(absoluteImagePath));
+
+app.get('/get-character', async (req, res) => {
+    const preference = (req.query.preference || 'tout').toLowerCase();
+    const validPreferences = ['femme', 'homme', 'tout'];
+    
+    if (!validPreferences.includes(preference)) {
+        return res.status(400).json({ error: 'Préférence de genre invalide' });
+    }
+
+    let query = `
+        SELECT 
+            id, 
+            name, 
+            anime, 
+            genre, 
+            image_url, 
+            character_url
+        FROM caracteres
+        WHERE image_url IS NOT NULL 
+          AND image_url != ''
+    `;
+
+    if (preference === 'femme') {
+        query += " AND genre = 'Femme'";
+    } else if (preference === 'homme') {
+        query += " AND genre = 'Homme'";
+    } else if (preference === 'tout') {
+        query += " AND genre IN ('Homme', 'Femme')";
+    }
+
+    query += " ORDER BY RANDOM() LIMIT 1";
+
+    try {
+        const result = await pool.query(query);
+        const character = result.rows[0];
+
+        if (!character) {
+            console.log('Aucun personnage trouvé.');
+            return res.status(404).json({ error: 'Aucun personnage trouvé' });
+        }
+
+        console.log('Personnage récupéré :', character);
+
+        // Modifier l'URL de l'image pour utiliser le chemin HTTP
+        const imageFileName = path.basename(character.image_url);
+        character.image_url = `/caractere/${imageFileName}`;
+
+        res.json({
+            id: character.id,
+            name: character.name,
+            anime: character.anime,
+            genre: character.genre,
+            image_url: character.image_url,
+            character_url: character.character_url
+        });
+    } catch (error) {
+        console.error("Erreur lors de la récupération du personnage :", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
+app.post('/save-smash-pass-results', express.json(), (req, res) => {
+    const choices = req.body;
+    if (!req.session) {
+        console.error('Session non initialisée');
+        return res.status(500).send('Erreur de session');
+    }
+    req.session.smashPassResults = choices;
+    res.sendStatus(200);    
+});
+
+app.get('/get-results', (req, res) => {
+    if (req.session && req.session.smashPassResults) {
+        console.log('Résultats envoyés au client :', req.session.smashPassResults);
+        res.json(req.session.smashPassResults);
+    } else {
+        console.error('Aucun résultat trouvé dans la session');
+        res.status(404).json({ message: 'Aucun résultat trouvé' });
+    }
+});
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
+// Route pour obtenir les animes
+app.get('/get-animes', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, title, REPLACE(image_url, 'C:\\Animeguesser\\images\\', '/images/') AS image_url, popularity, score, members
+            FROM animes
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Erreur lors de la récupération des animes :', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des animes' });
+    }
+});
+
+app.get('/get-character-game-data', async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        // Étape 1 : Récupérer un personnage principal
+        const mainCharacterQuery = `
+            SELECT id, name, anime, genre, image_url
+            FROM caracteres
+            ORDER BY RANDOM()
+            LIMIT 1;
+        `;
+        const mainCharacterResult = await client.query(mainCharacterQuery);
+        const mainCharacter = mainCharacterResult.rows[0];
+
+        if (!mainCharacter) {
+            return res.status(404).json({ error: 'Aucun personnage principal trouvé.' });
+        }
+
+        // Convertir le chemin local de l'image en URL HTTP
+        mainCharacter.image_url = `/caractere/${path.basename(mainCharacter.image_url)}`;
+
+        // Étape 2 : Récupérer 3 autres personnages aléatoires
+        const additionalCharactersQuery = `
+            SELECT id, name, anime, genre
+            FROM caracteres
+            WHERE id != $1
+            ORDER BY RANDOM()
+            LIMIT 3;
+        `;
+        const additionalCharactersResult = await client.query(additionalCharactersQuery, [mainCharacter.id]);
+        const additionalCharacters = additionalCharactersResult.rows;
+
+        // Étape 3 : Construire la réponse JSON
+        const response = {
+            mainCharacter: {
+                id: mainCharacter.id,
+                name: mainCharacter.name,
+                anime: mainCharacter.anime,
+                genre: mainCharacter.genre,
+                image_url: mainCharacter.image_url,
+            },
+            options: [...additionalCharacters],
+        };
+
+        // Ajouter le personnage principal dans les options
+        response.options.push({
+            id: mainCharacter.id,
+            name: mainCharacter.name,
+            anime: mainCharacter.anime,
+        });
+
+        // Mélanger les options avec un aléatoire robuste
+        response.options = shuffleArray(response.options);
+
+        res.json(response);
+    } catch (error) {
+        console.error('Erreur lors de la récupération des données de jeu :', error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    } finally {
+        client.release();
+    }
+});
+
+// Fonction pour mélanger un tableau (aléatoire robuste)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(cryptoRandom() * (i + 1)); // Utiliser une fonction aléatoire robuste
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// Fonction pour générer un nombre aléatoire robuste
+function cryptoRandom() {
+    return crypto.getRandomValues(new Uint32Array(1))[0] / (0xffffffff + 1);
+}
 
 // Démarrer le serveur
 const port = 3000;

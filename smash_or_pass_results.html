@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Résultats - Smash or Pass</title>
+    <!-- Lien vers Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Lien vers Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Votre fichier CSS personnalisé -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="sop-results-container">
+        <div class="sop-categories">
+            <div class="sop-category-title sop-pass-title">Pass</div>
+            <div class="sop-category-title sop-smash-title">Smash</div>
+            <div class="sop-category-title sop-ultra-smash-title">Ultra Smash</div>
+        </div>
+        <div class="sop-columns-container">
+            <div class="sop-columns">
+                <div class="sop-column" id="sop-pass-column"></div>
+                <div class="sop-column" id="sop-smash-column"></div>
+                <div class="sop-column" id="sop-ultraSmash-column"></div>
+            </div>
+        </div>
+        <button class="sop-restart-button" onclick="restartGame()">Recommencer</button>
+    </div>
+    <script>
+        fetch('/get-results')
+            .then(response => response.json())
+            .then(results => {
+                displayResults('sop-pass-column', results.pass);
+                displayResults('sop-smash-column', results.smash);
+                displayResults('sop-ultraSmash-column', results.ultraSmash);
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des résultats :', error);
+            });
+
+        function displayResults(columnId, characters) {
+            const column = document.getElementById(columnId);
+            if (!characters || characters.length === 0) {
+                const noResult = document.createElement('p');
+                noResult.textContent = 'Aucun résultat';
+                column.appendChild(noResult);
+                return;
+            }
+            characters.forEach(character => {
+                const item = document.createElement('div');
+                item.classList.add('sop-result-item');
+
+                const img = document.createElement('img');
+                img.src = character.image_url;
+                img.alt = character.name;
+                img.title = character.name;
+                img.classList.add('sop-result-image');
+
+                const name = document.createElement('p');
+                name.textContent = character.name;
+                name.classList.add('sop-result-name');
+
+                item.appendChild(img);
+                item.appendChild(name);
+                column.appendChild(item);
+            });
+        }
+
+        function restartGame() {
+            window.location.href = 'smash_or_pass_select.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Devine le Personnage</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="devine-container">
+        <!-- En-tête avec compteur -->
+        <div class="devine-header">
+            <div class="devine-lives">Vies : <span id="devine-lives">3</span></div>
+            <div class="devine-score">Personnages trouvés : <span id="devine-score">0</span></div>
+        </div>
+        
+        <!-- Conteneur principal -->
+        <div class="devine-character-container">
+            <img id="devine-character-image" src="" alt="Personnage" class="devine-character-image" />
+        </div>
+
+        <!-- Options -->
+        <div class="devine-options-container">
+            <button class="devine-option-button" id="devine-option-1"></button>
+            <button class="devine-option-button" id="devine-option-2"></button>
+            <button class="devine-option-button" id="devine-option-3"></button>
+            <button class="devine-option-button" id="devine-option-4"></button>
+        </div>
+    </div>
+
+    <!-- Écran de fin -->
+    <div class="devine-game-over-screen devine-hidden">
+        <h1>Jeu Terminé</h1>
+        <p>Vous avez trouvé <span id="devine-final-score">0</span> personnages !</p>
+        <button id="devine-restart-button">Recommencer</button>
+        <button id="devine-menu-button">Menu Principal</button>
+    </div>>
+
+<script>
+    let lives = 3;
+    let score = 0;
+
+    // Références aux éléments du DOM
+    const characterImage = document.getElementById('devine-character-image');
+    const optionsContainer = document.querySelector('.devine-options-container');
+    const livesDisplay = document.getElementById('devine-lives');
+    const scoreDisplay = document.getElementById('devine-score');
+    const gameOverScreen = document.querySelector('.devine-game-over-screen');
+    const finalScoreDisplay = document.getElementById('devine-final-score');
+    const restartButton = document.getElementById('devine-restart-button');
+    const menuButton = document.getElementById('devine-menu-button');
+
+    // Charger un nouveau round
+    async function loadCharacter() {
+        try {
+            // Récupérer les données depuis l'API
+            const res = await fetch('/get-character-game-data');
+            const data = await res.json();
+
+            // Mettre à jour l'image du personnage principal
+            const mainCharacter = data.mainCharacter;
+            characterImage.src = mainCharacter.image_url;
+
+            // Vider les options précédentes
+            optionsContainer.innerHTML = '';
+
+            // Ajouter les nouvelles options
+            data.options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('devine-option-button');
+                button.innerHTML = `
+                    <span class="devine-character-name">${option.name}</span>
+                    <br>
+                    <span class="devine-anime-title">${option.anime}</span>
+                `;
+
+                // Ajouter les événements de clic
+                if (option.id === mainCharacter.id) {
+                    button.onclick = () => handleCorrectAnswer(button);
+                } else {
+                    button.onclick = () => handleWrongAnswer(button, mainCharacter.name);
+                }
+
+                optionsContainer.appendChild(button);
+            });
+        } catch (error) {
+            console.error('Erreur lors du chargement du personnage :', error);
+        }
+    }
+
+    // Gestion des bonnes réponses
+    function handleCorrectAnswer(button) {
+        button.classList.add('correct');
+        score++;
+        scoreDisplay.textContent = score;
+
+        // Charger le prochain round après un délai
+        setTimeout(loadCharacter, 1000);
+    }
+
+    // Gestion des mauvaises réponses
+    function handleWrongAnswer(button, correctName) {
+        button.classList.add('wrong');
+        lives--;
+        livesDisplay.textContent = lives;
+
+        // Mettre en surbrillance la bonne réponse
+        const buttons = optionsContainer.querySelectorAll('.devine-option-button');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes(correctName)) {
+                btn.classList.add('correct');
+            }
+        });
+
+        if (lives === 0) {
+            endGame();
+        } else {
+            // Charger le prochain round après un délai
+            setTimeout(loadCharacter, 1000);
+        }
+    }
+
+    // Terminer le jeu
+    function endGame() {
+        finalScoreDisplay.textContent = score;
+        gameOverScreen.classList.remove('devine-hidden');
+    }
+
+    restartButton.onclick = () => {
+        lives = 3;
+        score = 0;
+        livesDisplay.textContent = lives;
+        scoreDisplay.textContent = score;
+        gameOverScreen.classList.add('devine-hidden'); // Cacher l'écran "Jeu Terminé"
+        loadCharacter();
+    };
+
+
+    // Retour au menu principal
+    menuButton.onclick = () => {
+        window.location.href = 'index.html';
+    };
+
+    // Charger le premier round
+    loadCharacter();
+</script>
+</body>
+</html>

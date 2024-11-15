@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Smash or Pass - Sélection du genre</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="select-container">
+        <h1>Choisissez votre préférence</h1>
+        <div class="button-group">
+            <button class="gender-button male" onclick="startGame('homme')">Homme</button>
+            <button class="gender-button female" onclick="startGame('femme')">Femme</button>
+            <button class="gender-button all" onclick="startGame('tout')">Tout</button>
+        </div>
+    </div>
+    <script>
+        function startGame(preference) {
+            window.location.href = `smash_or_pass_game.html?preference=${preference}`;
+        }
+    </script>
+</body>
+</html>
