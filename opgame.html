@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu - Devinez l'animé</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="op-container">
+        <header class="op-header">
+            <h1 class="op-title">Devinez l'animé !</h1>
+            <div class="op-stats">
+                <span class="op-lives">Vies : <span id="op-lives-count">3</span></span>
+                <span class="op-points">Points : <span id="op-points-count">0</span></span>
+            </div>
+        </header>
+
+        <div class="op-game-area">
+            <div class="op-media">
+                <audio id="op-audio" controls>
+                    <source id="op-audio-source" src="" type="audio/webm">
+                    Votre navigateur ne supporte pas la lecture audio.
+                </audio>
+                <button id="op-unlock-video" class="op-action-button">Débloquer la vidéo</button>
+                <video id="op-video" class="op-video-hidden" controls>
+                    <source id="op-video-source" src="" type="video/webm">
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                </video>
+                <button id="op-unblur-video" class="op-action-button op-video-hidden">Déflouter la vidéo</button>
+            </div>
+
+            <div class="op-answer-area">
+                <input type="text" id="op-guess" class="op-guess-input" placeholder="Devinez l'animé..." autocomplete="off">
+                <div class="op-buttons">
+                    <button id="op-submit" class="op-action-button">Valider</button>
+                    <button id="op-skip" class="op-action-button">Je ne sais pas</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="op-footer">
+            <span id="op-correct-answer" class="op-hidden">Réponse correcte : <span id="op-correct-name"></span></span>
+        </footer>
+    </div>
+    <script src="opgame.js"></script>
+</body>
+</html>

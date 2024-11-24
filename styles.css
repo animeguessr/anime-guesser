@@ -4,12 +4,13 @@ html {
 }
 
 body {
+    font-family: 'Arial', sans-serif;
     margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background-color: #1B263B;
-    background-image: url('background.jpg');
-    background-size: cover;
-    background-position: center;
+    padding: 0;
+    background: radial-gradient(circle, #1e1e2f, #12121c);
+    color: white;
+    text-align: center;
+    overflow: hidden;
 }
 
 /* En-tête */
@@ -1051,4 +1052,265 @@ button:hover {
 
 .devine-game-over-screen button:hover {
     background-color: #666;
+}
+
+
+/* Conteneur principal */
+.op-container {
+    margin-top: 20vh;
+}
+
+/* Titre */
+.op-title {
+    font-size: 3.5em;
+    margin-bottom: 50px;
+    text-shadow: 0 0 00px #fff, 0 0 20px #ff5c5c, 0 0 30px #ff5c5c;
+}
+
+/* Grille des boutons */
+.op-difficulty-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    max-width: 80%;
+    margin: 0 auto;
+    padding-top: 50px;
+}
+
+/* Boutons */
+.op-difficulty-button {
+    padding: 30px 20px;
+    font-size: 1.5em;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    text-shadow: 0 0 5px #000;
+    transition: transform 0.3s, box-shadow 0.3s;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.op-difficulty-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.op-easy {
+    background: linear-gradient(45deg, #00ff99, #33cc33);
+    color: black;
+}
+
+.op-easy:hover {
+    box-shadow: 0 0 20px #00ff99, 0 0 40px #33cc33;
+}
+
+.op-normal {
+    background: linear-gradient(45deg, #ffcc00, #ff6600);
+    color: black;
+}
+
+.op-normal:hover {
+    box-shadow: 0 0 20px #ffcc00, 0 0 40px #ff6600;
+}
+
+.op-hard {
+    background: linear-gradient(45deg, #ff0066, #cc0033);
+    color: black;
+}
+
+.op-hard:hover {
+    box-shadow: 0 0 20px #ff0066, 0 0 40px #cc0033;
+}
+
+/.op-title {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f39c12;
+    font-size: 4rem;
+    font-weight: bold;
+    text-shadow: 3px 3px 7px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+/* Statistiques (Vies et Points) */
+.op-stats {
+    position: absolute;
+    top: 6%;
+    width: 90%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 2.5rem;
+    padding: 0 5%;
+}
+
+.op-lives {
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    padding: 10px 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
+}
+
+.op-points {
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #8e44ad, #9b59b6);
+    padding: 10px 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(142, 68, 173, 0.7);
+}
+
+/* Zone du média */
+.op-media {
+    position: absolute;
+    top: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Lecteur audio initialement visible */
+#op-audio {
+    display: block;
+    width: 90%;
+    max-width: 800px;
+    height: auto;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Lecteur vidéo initialement masqué */
+#op-video {
+    display: none; /* Masqué par défaut */
+    width: 90%;
+    max-width: 800px;
+    height: auto;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Bouton "Débloquer la vidéo" */
+.op-unlock-video {
+    margin-top: 15px;
+    background: linear-gradient(45deg, #2980b9, #3498db);
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    color: white;
+    cursor: pointer;
+    border: none;
+}
+
+/* Bouton "Débloquer la vidéo" désactivé */
+.op-unlock-video:disabled {
+    background: gray;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Bouton "Déflouter la vidéo" initialement masqué */
+.op-deflutter {
+    display: none; /* Masqué par défaut */
+    margin-top: 15px;
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    color: white;
+    cursor: pointer;
+    border: none;
+}
+
+.op-deflutter:disabled {
+    background: gray;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Champ de saisie */
+.op-guess-input {
+    position: absolute;
+    top: 65%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-width: 1000px;
+    padding: 20px;
+    font-size: 2rem;
+    border-radius: 30px;
+    border: 3px solid #3498db;
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+}
+
+/* Boutons principaux */
+.op-buttons {
+    position: absolute;
+    top: 80%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 50px;
+    justify-content: center;
+}
+
+.op-button {
+    padding: 20px 40px;
+    font-size: 2rem;
+    border-radius: 30px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.op-button:hover {
+    transform: scale(1.1);
+}
+
+#op-submit {
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+}
+
+#op-skip {
+    background: linear-gradient(45deg, #e67e22, #f39c12);
+}
+
+/* Gestion des boutons d'indices */
+.op-hints {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+.op-hint {
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    border: none;
+    color: white;
+    background: linear-gradient(45deg, #f1c40f, #f39c12);
+    transition: all 0.3s ease;
+}
+
+.op-hint:disabled {
+    background: gray;
+    cursor: not-allowed;
+    box-shadow: none;
 }

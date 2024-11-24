@@ -6,10 +6,14 @@ const session = require('express-session');
 const fs = require('fs');
 const levenshtein = require('fast-levenshtein');
 const unaccent = require('unaccent');
-const imageDirectory = path.join('C:', 'Animeguesser', 'caractere');
-app.use('/caractere', express.static(imageDirectory));
+const crypto = require('crypto'); // Import du module crypto pour une génération aléatoire robuste
 
-// Connexion à la base de données
+// Chemins des répertoires d'images
+const imageDirectory = path.join('C:', 'Animeguesser', 'caractere');
+const absoluteImagePath = path.resolve('C:/Animeguesser/caractere');
+const openingDirectory = path.join('C:', 'Animeguesser', 'opening', 'opening');
+
+// Configuration du pool de connexions à la base de données
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
@@ -18,339 +22,225 @@ const pool = new Pool({
     port: 5432
 });
 
-// Middleware pour traiter le JSON envoyé par le client
+// Middleware
 app.use(express.json());
-
-// Configuration des sessions
 app.use(session({
     secret: 'votre_cle_secrete', // Remplacez par une clé secrète robuste
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Passez à true si vous utilisez HTTPS
 }));
-
-// Servir les fichiers statiques depuis le répertoire courant
 app.use(express.static(path.join(__dirname)));
+app.use('/caractere', express.static(imageDirectory));
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/opening', express.static(openingDirectory));
 
-// Serveur principal
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Endpoint pour la sélection du niveau
-app.get('/game.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'game.html'));
-});
-
-// Endpoint pour le gameplay
-app.get('/gameplay.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'gameplay.html'));
-});
-
-// Fonction pour normaliser les chaînes de caractères
+// Fonctions utilitaires
 function normalizeString(str) {
-    // Supprimer les accents et convertir en minuscules
     let normalized = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-    // Supprimer la ponctuation et les caractères spéciaux
     normalized = normalized.replace(/[^a-z0-9\s]/g, "");
-
-    // Supprimer les espaces multiples
     normalized = normalized.replace(/\s+/g, " ").trim();
-
-    // Supprimer les articles définis en début de phrase
     normalized = normalized.replace(/^(le|la|les|l|un|une|des)\s+/i, "");
-
     return normalized;
 }
 
-// Fonction pour obtenir les critères en fonction du niveau
 function getLevelCriteria(level, modifier = 0) {
-    let baseCriteria;
+    let baseCriteria = {
+        maxPopularity: 550,
+        types: ['TV'],
+        includeSequels: false,
+        excludeTop: null
+    };
+
     switch (level) {
         case 'very_easy':
-            baseCriteria = {
-                maxPopularity: 350,
-                types: ['TV'],
-                includeSequels: false,
-                excludeTop: null
-            };
+            baseCriteria = { maxPopularity: 350, types: ['TV'], includeSequels: false };
             break;
         case 'easy':
-            baseCriteria = {
-                maxPopularity: 650,
-                types: ['TV', 'Movie'],
-                includeSequels: false,
-                excludeTop: null
-            };
+            baseCriteria = { maxPopularity: 650, types: ['TV', 'Movie'], includeSequels: false };
             break;
         case 'normal':
-            baseCriteria = {
-                maxPopularity: 900,
-                types: ['TV', 'Movie'],
-                includeSequels: false,
-                excludeTop: null
-            };
+            baseCriteria = { maxPopularity: 900, types: ['TV', 'Movie'], includeSequels: false };
             break;
         case 'hard':
-            baseCriteria = {
-                maxPopularity: 2000,
-                types: ['TV', 'Movie', 'OVA'],
-                includeSequels: true,
-                excludeTop: 400
-            };
+            baseCriteria = { maxPopularity: 2000, types: ['TV', 'Movie', 'OVA'], includeSequels: true, excludeTop: 400 };
             break;
         case 'impossible':
-            baseCriteria = {
-                maxPopularity: 5000,
-                types: ['Movie', 'OVA', 'ONA', 'Special'],
-                includeSequels: true,
-                excludeTop: 1000 // Exclut les animés du top 1000
-            };
-            break;
-        default:
-            baseCriteria = {
-                maxPopularity: 550,
-                types: ['TV'],
-                includeSequels: false,
-                excludeTop: null
-            };
+            baseCriteria = { maxPopularity: 5000, types: ['Movie', 'OVA', 'ONA', 'Special'], includeSequels: true, excludeTop: 1000 };
             break;
     }
 
-    // Ajuster la popularité maximale en fonction du modificateur
-    baseCriteria.maxPopularity += modifier;
-
-    // S'assurer que la popularité maximale reste dans des limites raisonnables
-    if (baseCriteria.maxPopularity < 100) baseCriteria.maxPopularity = 100;
-    if (baseCriteria.maxPopularity > 5000) baseCriteria.maxPopularity = 5000;
-
+    baseCriteria.maxPopularity = Math.min(Math.max(baseCriteria.maxPopularity + modifier, 100), 5000);
     return baseCriteria;
 }
 
-// Endpoint pour définir le niveau dans la session
+function cryptoRandom() {
+    const buffer = crypto.randomBytes(4);
+    return buffer.readUInt32BE(0) / 0xffffffff;
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(cryptoRandom() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// Routes
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/game.html', (req, res) => res.sendFile(path.join(__dirname, 'game.html')));
+app.get('/gameplay.html', (req, res) => res.sendFile(path.join(__dirname, 'gameplay.html')));
+
 app.get('/set-level', (req, res) => {
-    const level = req.query.level;
-    req.session.level = level;
-    req.session.difficultyModifier = 0; // Réinitialiser le modificateur
+    req.session.level = req.query.level;
+    req.session.difficultyModifier = 0;
     res.redirect('/gameplay.html');
 });
 
-// Endpoint pour obtenir une image d'animé depuis la base de données en fonction du niveau
-// Endpoint pour obtenir une image d'animé depuis la base de données en fonction du niveau
 app.get('/anime-image', async (req, res) => {
     try {
-        const level = req.session.level || 'very_easy'; // Niveau par défaut
-
-        // Obtenir le modificateur de difficulté
+        const level = req.session.level || 'very_easy';
         const difficultyModifier = req.session.difficultyModifier || 0;
-
-        // Obtenir les critères en fonction du niveau et du modificateur
         const criteria = getLevelCriteria(level, difficultyModifier);
+        req.session.usedAnimeIds = req.session.usedAnimeIds || [];
 
-        // Récupérer la liste des IDs des animés déjà utilisés dans la session
-        if (!req.session.usedAnimeIds) {
-            req.session.usedAnimeIds = [];
-        }
-
-        // Construire la requête SQL en fonction des critères
-        let query = `
-            SELECT * FROM animes
-            WHERE popularity <= $1
-            AND anime_type = ANY($2)
-            ${criteria.includeSequels ? '' : 'AND is_sequel = FALSE'}
-            ${criteria.excludeTop ? 'AND popularity > $3' : ''}
-            AND id NOT IN (${req.session.usedAnimeIds.join(',') || 'NULL'})
-            ORDER BY RANDOM()
-            LIMIT 1
-        `;
-
+        const conditions = ['popularity <= $1', 'anime_type = ANY($2)'];
         const values = [criteria.maxPopularity, criteria.types];
+        let paramIndex = 3;
+
+        if (!criteria.includeSequels) conditions.push(`is_sequel = FALSE`);
         if (criteria.excludeTop) {
+            conditions.push(`popularity > $${paramIndex}`);
             values.push(criteria.excludeTop);
+            paramIndex++;
+        }
+        if (req.session.usedAnimeIds.length > 0) {
+            conditions.push(`id != ALL($${paramIndex})`);
+            values.push(req.session.usedAnimeIds);
+            paramIndex++;
         }
 
+        const query = `SELECT * FROM animes WHERE ${conditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
         let { rows } = await pool.query(query, values);
 
         if (rows.length === 0) {
-            // Si aucun animé n'est trouvé (tous ont été utilisés), réinitialiser la liste
             req.session.usedAnimeIds = [];
-            // Relancer la requête sans exclure les IDs
-            query = `
-                SELECT * FROM animes
-                WHERE popularity <= $1
-                AND anime_type = ANY($2)
-                ${criteria.includeSequels ? '' : 'AND is_sequel = FALSE'}
-                ${criteria.excludeTop ? 'AND popularity > $3' : ''}
-                ORDER BY RANDOM()
-                LIMIT 1
-            `;
-            const result = await pool.query(query, values);
-            rows = result.rows;
-            if (rows.length === 0) {
-                res.status(404).send('Aucun animé trouvé');
-                return;
-            }
+            const resetConditions = conditions.filter(cond => !cond.includes('id != ALL'));
+            const resetQuery = `SELECT * FROM animes WHERE ${resetConditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
+            const resetResult = await pool.query(resetQuery, values.slice(0, paramIndex - 1));
+            rows = resetResult.rows;
+            if (rows.length === 0) return res.status(404).send('Aucun animé trouvé');
         }
 
         const currentAnime = rows[0];
         req.session.currentAnime = currentAnime;
-
-        // Ajouter l'ID de l'animé utilisé à la liste
         req.session.usedAnimeIds.push(currentAnime.id);
 
-        // Construire l'URL de l'image
-        const imageFileName = path.basename(currentAnime.image_url); // Récupère le nom de fichier
+        const imageFileName = path.basename(currentAnime.image_url);
         const imageUrl = `/images/${imageFileName}`;
-
-        // Vérifier si le fichier image existe
         const imagePath = path.join(__dirname, 'images', imageFileName);
+
         if (!fs.existsSync(imagePath)) {
             console.error('Image non trouvée :', imagePath);
-            res.status(404).send('Image non trouvée');
-            return;
+            return res.status(404).send('Image non trouvée');
         }
 
-        // Inclure l'URL de l'image dans les données de l'animé
-        const animeData = {
+        res.json({
             id: currentAnime.id,
             title: currentAnime.title,
             alt_title: currentAnime.alt_title,
             popularity: currentAnime.popularity,
-            image_url: imageUrl,
-            // Ajoutez ici d'autres champs nécessaires pour le calcul du score
-        };
-
-        // Envoyer les données de l'animé au client
-        res.json(animeData);
+            image_url: imageUrl
+        });
     } catch (error) {
         console.error('Erreur lors de la récupération de l\'image :', error);
         res.status(500).send('Erreur lors de la récupération de l\'image');
     }
 });
 
-// Endpoint pour réinitialiser les IDs des animés utilisés
 app.get('/reset-used-animes', (req, res) => {
     req.session.usedAnimeIds = [];
     res.sendStatus(200);
 });
 
-// Endpoint pour vérifier la réponse de l'utilisateur
 app.post('/check-answer', (req, res) => {
     const userAnswer = normalizeString(req.body.answer.trim());
     const possibleTitles = req.body.possibleTitles.map(title => normalizeString(title.trim()));
-
     const currentAnime = req.session.currentAnime;
-    const level = req.session.level || 'very_easy';
 
-    if (!currentAnime) {
-        res.json({ correct: false });
-        return;
-    }
+    if (!currentAnime) return res.json({ correct: false });
 
     const correctTitles = [
         normalizeString(currentAnime.title.trim()),
         normalizeString(currentAnime.alt_title.trim())
     ];
 
-    function isSimilar(a, b) {
+    const isSimilar = (a, b) => {
         const distance = levenshtein.get(a, b);
         const maxLength = Math.max(a.length, b.length);
-        const similarity = (maxLength - distance) / maxLength;
-        return similarity >= 0.8; // Seuil de similarité (80%)
-    }
+        return (maxLength - distance) / maxLength >= 0.8;
+    };
 
-    let correct = false;
-    for (const userTitle of possibleTitles) {
-        for (const correctTitle of correctTitles) {
-            if (isSimilar(userTitle, correctTitle)) {
-                correct = true;
-                break;
-            }
-        }
-        if (correct) break;
-    }
+    const correct = possibleTitles.some(userTitle =>
+        correctTitles.some(correctTitle => isSimilar(userTitle, correctTitle))
+    );
 
     if (correct) {
         res.json({ correct: true });
     } else {
-        // Formatage du titre correct
-        let correctAnswerFormatted;
-        if (currentAnime.title !== currentAnime.alt_title) {
-            correctAnswerFormatted = `${currentAnime.alt_title} (${currentAnime.title})`;
-        } else {
-            correctAnswerFormatted = currentAnime.title;
-        }
-
+        const correctAnswerFormatted = currentAnime.title !== currentAnime.alt_title
+            ? `${currentAnime.alt_title} (${currentAnime.title})`
+            : currentAnime.title;
         res.json({ correct: false, correctAnswer: correctAnswerFormatted });
     }
 });
 
-// Endpoint pour ajuster la difficulté
 app.post('/adjust-difficulty', (req, res) => {
     const correct = req.body.correct;
-    if (!req.session.difficultyModifier) {
-        req.session.difficultyModifier = 0;
-    }
-
-    if (correct) {
-        // Augmenter la difficulté
-        req.session.difficultyModifier -= 50;
-    } else {
-        // Diminuer la difficulté
-        req.session.difficultyModifier += 50;
-    }
-
+    req.session.difficultyModifier = req.session.difficultyModifier || 0;
+    req.session.difficultyModifier += correct ? -50 : 50;
     res.sendStatus(200);
 });
 
-// Endpoint pour obtenir des suggestions d'animés
 app.get('/anime-suggestions', async (req, res) => {
     const searchQuery = req.query.query.toLowerCase();
     const level = req.session.level || 'very_easy';
 
-    // Déterminer les types d'animés à inclure en fonction du niveau
     let animeTypes;
-    let excludeSequels = false; // Nouveau drapeau pour exclure les séquelles
+    let excludeSequels = false;
 
     switch (level) {
         case 'very_easy':
-            animeTypes = ['TV']; // Inclure uniquement les séries TV
-            excludeSequels = true; // Exclure les séquelles en mode Très Simple
+            animeTypes = ['TV'];
+            excludeSequels = true;
             break;
         case 'easy':
-            animeTypes = ['TV', 'Movie']; // Inclure séries TV et films
+            animeTypes = ['TV', 'Movie'];
             break;
         case 'normal':
-            animeTypes = ['TV', 'Movie', 'OVA']; // Ajouter les OVA
+            animeTypes = ['TV', 'Movie', 'OVA'];
             break;
         case 'hard':
         case 'impossible':
-            animeTypes = ['TV', 'Movie', 'OVA', 'ONA', 'Special']; // Inclure tous les types
+            animeTypes = ['TV', 'Movie', 'OVA', 'ONA', 'Special'];
             break;
         default:
             animeTypes = ['TV'];
     }
 
-    // Construire la condition SQL pour exclure les séquelles si nécessaire
-    let sequelCondition = '';
-    if (excludeSequels) {
-        sequelCondition = 'AND is_sequel = false';
-    }
+    const conditions = [
+        `(LOWER(unaccent(title)) LIKE '%' || unaccent($1) || '%' OR LOWER(unaccent(alt_title)) LIKE '%' || unaccent($1) || '%')`,
+        `anime_type = ANY($2)`
+    ];
+    const values = [searchQuery, animeTypes];
 
-    // Requête SQL pour les suggestions avec filtrage des types et des séquelles
-    const query = `
-        SELECT title, alt_title
-        FROM animes
-        WHERE (LOWER(unaccent(title)) LIKE '%' || unaccent($1) || '%'
-            OR LOWER(unaccent(alt_title)) LIKE '%' || unaccent($1) || '%')
-            AND anime_type = ANY($2)
-            ${sequelCondition}
-        LIMIT 10
-    `;
+    if (excludeSequels) conditions.push(`is_sequel = FALSE`);
+
+    const query = `SELECT title, alt_title FROM animes WHERE ${conditions.join(' AND ')} LIMIT 10`;
 
     try {
-        const result = await pool.query(query, [searchQuery, animeTypes]);
+        const result = await pool.query(query, values);
         res.json(result.rows);
     } catch (err) {
         console.error("Erreur lors de la récupération des suggestions", err);
@@ -358,99 +248,60 @@ app.get('/anime-suggestions', async (req, res) => {
     }
 });
 
-const absoluteImagePath = path.resolve('C:/Animeguesser/caractere');
-app.use('/caractere', express.static(absoluteImagePath));
-
 app.get('/get-character', async (req, res) => {
     const preference = (req.query.preference || 'tout').toLowerCase();
     const validPreferences = ['femme', 'homme', 'tout'];
-    
-    if (!validPreferences.includes(preference)) {
-        return res.status(400).json({ error: 'Préférence de genre invalide' });
-    }
 
-    let query = `
-        SELECT 
-            id, 
-            name, 
-            anime, 
-            genre, 
-            image_url, 
-            character_url
-        FROM caracteres
-        WHERE image_url IS NOT NULL 
-          AND image_url != ''
-    `;
+    if (!validPreferences.includes(preference)) return res.status(400).json({ error: 'Préférence de genre invalide' });
+
+    const conditions = ['image_url IS NOT NULL', "image_url != ''"];
+    const values = [];
+    let paramIndex = 1;
 
     if (preference === 'femme') {
-        query += " AND genre = 'Femme'";
+        conditions.push(`genre = $${paramIndex++}`);
+        values.push('Femme');
     } else if (preference === 'homme') {
-        query += " AND genre = 'Homme'";
-    } else if (preference === 'tout') {
-        query += " AND genre IN ('Homme', 'Femme')";
+        conditions.push(`genre = $${paramIndex++}`);
+        values.push('Homme');
+    } else {
+        conditions.push(`genre IN ('Homme', 'Femme')`);
     }
 
-    query += " ORDER BY RANDOM() LIMIT 1";
+    const query = `SELECT id, name, anime, genre, image_url, character_url FROM caracteres WHERE ${conditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
 
     try {
-        const result = await pool.query(query);
+        const result = await pool.query(query, values);
         const character = result.rows[0];
+        if (!character) return res.status(404).json({ error: 'Aucun personnage trouvé' });
 
-        if (!character) {
-            console.log('Aucun personnage trouvé.');
-            return res.status(404).json({ error: 'Aucun personnage trouvé' });
-        }
-
-        console.log('Personnage récupéré :', character);
-
-        // Modifier l'URL de l'image pour utiliser le chemin HTTP
         const imageFileName = path.basename(character.image_url);
         character.image_url = `/caractere/${imageFileName}`;
 
-        res.json({
-            id: character.id,
-            name: character.name,
-            anime: character.anime,
-            genre: character.genre,
-            image_url: character.image_url,
-            character_url: character.character_url
-        });
+        res.json(character);
     } catch (error) {
         console.error("Erreur lors de la récupération du personnage :", error);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
-
-app.post('/save-smash-pass-results', express.json(), (req, res) => {
-    const choices = req.body;
-    if (!req.session) {
-        console.error('Session non initialisée');
-        return res.status(500).send('Erreur de session');
-    }
-    req.session.smashPassResults = choices;
-    res.sendStatus(200);    
+app.post('/save-smash-pass-results', (req, res) => {
+    if (!req.session) return res.status(500).send('Erreur de session');
+    req.session.smashPassResults = req.body;
+    res.sendStatus(200);
 });
 
 app.get('/get-results', (req, res) => {
     if (req.session && req.session.smashPassResults) {
-        console.log('Résultats envoyés au client :', req.session.smashPassResults);
         res.json(req.session.smashPassResults);
     } else {
-        console.error('Aucun résultat trouvé dans la session');
         res.status(404).json({ message: 'Aucun résultat trouvé' });
     }
 });
 
-app.use('/images', express.static(path.join(__dirname, 'images')));
-
-// Route pour obtenir les animes
 app.get('/get-animes', async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT id, title, REPLACE(image_url, 'C:\\Animeguesser\\images\\', '/images/') AS image_url, popularity, score, members
-            FROM animes
-        `);
+        const result = await pool.query(`SELECT id, title, REPLACE(image_url, 'C:\\Animeguesser\\images\\', '/images/') AS image_url, popularity, score, members FROM animes`);
         res.json(result.rows);
     } catch (error) {
         console.error('Erreur lors de la récupération des animes :', error);
@@ -460,59 +311,24 @@ app.get('/get-animes', async (req, res) => {
 
 app.get('/get-character-game-data', async (req, res) => {
     const client = await pool.connect();
-
     try {
-        // Étape 1 : Récupérer un personnage principal
-        const mainCharacterQuery = `
-            SELECT id, name, anime, genre, image_url
-            FROM caracteres
-            ORDER BY RANDOM()
-            LIMIT 1;
-        `;
-        const mainCharacterResult = await client.query(mainCharacterQuery);
+        const mainCharacterResult = await client.query(`SELECT id, name, anime, genre, image_url FROM caracteres ORDER BY RANDOM() LIMIT 1`);
         const mainCharacter = mainCharacterResult.rows[0];
+        if (!mainCharacter) return res.status(404).json({ error: 'Aucun personnage principal trouvé.' });
 
-        if (!mainCharacter) {
-            return res.status(404).json({ error: 'Aucun personnage principal trouvé.' });
-        }
-
-        // Convertir le chemin local de l'image en URL HTTP
         mainCharacter.image_url = `/caractere/${path.basename(mainCharacter.image_url)}`;
 
-        // Étape 2 : Récupérer 3 autres personnages aléatoires
-        const additionalCharactersQuery = `
-            SELECT id, name, anime, genre
-            FROM caracteres
-            WHERE id != $1
-            ORDER BY RANDOM()
-            LIMIT 3;
-        `;
-        const additionalCharactersResult = await client.query(additionalCharactersQuery, [mainCharacter.id]);
-        const additionalCharacters = additionalCharactersResult.rows;
-
-        // Étape 3 : Construire la réponse JSON
-        const response = {
-            mainCharacter: {
-                id: mainCharacter.id,
-                name: mainCharacter.name,
-                anime: mainCharacter.anime,
-                genre: mainCharacter.genre,
-                image_url: mainCharacter.image_url,
-            },
-            options: [...additionalCharacters],
-        };
-
-        // Ajouter le personnage principal dans les options
-        response.options.push({
+        const additionalCharactersResult = await client.query(`SELECT id, name, anime, genre FROM caracteres WHERE id != $1 ORDER BY RANDOM() LIMIT 3`, [mainCharacter.id]);
+        const options = [...additionalCharactersResult.rows, {
             id: mainCharacter.id,
             name: mainCharacter.name,
-            anime: mainCharacter.anime,
+            anime: mainCharacter.anime
+        }];
+
+        res.json({
+            mainCharacter: mainCharacter,
+            options: shuffleArray(options)
         });
-
-        // Mélanger les options avec un aléatoire robuste
-        response.options = shuffleArray(response.options);
-
-        res.json(response);
     } catch (error) {
         console.error('Erreur lors de la récupération des données de jeu :', error);
         res.status(500).json({ error: 'Erreur serveur.' });
@@ -521,39 +337,47 @@ app.get('/get-character-game-data', async (req, res) => {
     }
 });
 
-// Fonction pour mélanger un tableau (aléatoire robuste)
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(cryptoRandom() * (i + 1)); // Utiliser une fonction aléatoire robuste
-        [array[i], array[j]] = [array[j], array[i]];
+app.get('/anime', async (req, res) => {
+    try {
+        const difficulty = req.query.difficulty;
+        let minId = 1, maxId = 90;
+
+        if (difficulty === 'normal') {
+            minId = 20; maxId = 300;
+        } else if (difficulty === 'hard') {
+            minId = 301; maxId = 600;
+        }
+
+        const result = await pool.query(`SELECT * FROM opening WHERE id >= $1 AND id <= $2 ORDER BY RANDOM()`, [minId, maxId]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erreur du serveur');
     }
-    return array;
-}
-
-// Fonction pour générer un nombre aléatoire robuste
-function cryptoRandom() {
-    return crypto.getRandomValues(new Uint32Array(1))[0] / (0xffffffff + 1);
-}
-
-// Démarrer le serveur
-const port = 3000;
-app.listen(port, () => {
-    console.log(`Serveur en cours d'exécution sur le port ${port}`);
 });
 
-// Endpoint pour obtenir la réponse correcte de l'animé actuel
+app.post('/validate', (req, res) => {
+    const { userInput, correctNames } = req.body;
+    const normalizedUserInput = normalizeString(userInput);
+    const normalizedCorrectNames = correctNames.map(name => normalizeString(name));
+    const isValid = normalizedCorrectNames.some(name => name === normalizedUserInput);
+    res.json({ valid: isValid });
+});
+
 app.get('/current-anime-answer', (req, res) => {
     const currentAnime = req.session.currentAnime;
     if (currentAnime) {
-        let correctAnswerFormatted;
-        if (currentAnime.title !== currentAnime.alt_title) {
-            correctAnswerFormatted = `${currentAnime.alt_title} (${currentAnime.title})`;
-        } else {
-            correctAnswerFormatted = currentAnime.title;
-        }
+        const correctAnswerFormatted = currentAnime.title !== currentAnime.alt_title
+            ? `${currentAnime.alt_title} (${currentAnime.title})`
+            : currentAnime.title;
         res.json({ correctAnswer: correctAnswerFormatted });
     } else {
         res.status(404).json({ error: 'Aucun animé en cours' });
     }
 });
 
+// Démarrage du serveur
+const port = 3000;
+app.listen(port, () => {
+    console.log(`Serveur en cours d'exécution sur le port ${port}`);
+});

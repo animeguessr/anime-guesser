@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sélection de la Difficulté</title>
+    <style>
+    /* Import des polices */
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Press+Start+2P&display=swap');
+
+    /* Palette de couleurs */
+    :root {
+        --primary-color: #ff6b6b;
+        --secondary-color: #5f27cd;
+        --accent-color: #1dd1a1;
+        --background-color: #f5f6fa;
+        --text-color: #2d3436;
+        --white-color: #ffffff;
+        --gradient-start: #ff6b6b;
+        --gradient-end: #1dd1a1;
+    }
+
+    /* Réinitialisation des marges et paddings */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Roboto', sans-serif;
+        background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        color: var(--text-color);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .container {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 800px;
+        width: 90%;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        animation: fadeIn 1s ease;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        margin-bottom: 30px;
+        color: var(--secondary-color);
+        font-family: 'Press Start 2P', cursive;
+    }
+
+    .difficulty-selector {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .difficulty-selector button {
+        background-color: var(--secondary-color);
+        color: var(--white-color);
+        border: none;
+        padding: 15px 30px;
+        margin: 10px;
+        font-size: 1.2rem;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .difficulty-selector button:hover {
+        background-color: var(--accent-color);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 2rem;
+        }
+
+        .difficulty-selector button {
+            font-size: 1rem;
+            padding: 12px 20px;
+        }
+    }
+    </style>
+    <!-- Import des polices -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Sélection de la Difficulté</h1>
+        <div class="difficulty-selector">
+            <button onclick="setDifficulty('easy')">Facile</button>
+            <button onclick="setDifficulty('normal')">Normal</button>
+            <button onclick="setDifficulty('hard')">Difficile</button>
+        </div>
+    </div>
+    <script>
+        function setDifficulty(level) {
+            localStorage.setItem('difficulty', level);
+            window.location.href = 'quiz.html';
+        }
+    </script>
+</body>
+</html>

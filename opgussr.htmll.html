@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Guessr</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        video {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .blur {
+            filter: blur(10px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .autocomplete-suggestions {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: white;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .autocomplete-suggestions div {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .autocomplete-suggestions div:hover {
+            background: #eee;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Anime Guessr</h1>
+        <video id="animeVideo" controls></video>
+        <input type="text" id="animeInput" placeholder="Devinez le nom de l'animé..." autocomplete="off">
+        <div id="suggestions" class="autocomplete-suggestions"></div>
+        <button onclick="submitGuess()">Deviner</button>
+        <p class="message" id="message"></p>
+    </div>
+
+    <script>
+        // Liste des données d'exemple (remplacez par les données de votre base)
+        const animeList = [
+            { id: 1, name: "Oshi no Ko", videoPath: "path/to/Oshi_no_Ko.webm" },
+            { id: 2, name: "Zankyou no Terror", videoPath: "path/to/Zankyou_no_Terror.webm" },
+            { id: 3, name: "Attack on Titan", videoPath: "path/to/Attack_on_Titan.webm" }
+        ];
+
+        let currentMode = "simple"; // Modes: simple, normal, hard
+        let currentAnime = {};
+        const animeInput = document.getElementById("animeInput");
+        const suggestionsBox = document.getElementById("suggestions");
+        const animeVideo = document.getElementById("animeVideo");
+        const message = document.getElementById("message");
+
+        // Initialisation du jeu
+        function startGame() {
+            currentAnime = animeList[Math.floor(Math.random() * animeList.length)];
+            animeVideo.src = currentAnime.videoPath;
+
+            if (currentMode === "normal") {
+                animeVideo.classList.add("blur");
+            } else {
+                animeVideo.classList.remove("blur");
+            }
+
+            if (currentMode === "hard") {
+                animeVideo.setAttribute("muted", true);
+            } else {
+                animeVideo.removeAttribute("muted");
+            }
+
+            animeVideo.play();
+            animeInput.value = "";
+            suggestionsBox.innerHTML = "";
+            message.textContent = "";
+        }
+
+        // Affichage des suggestions
+        animeInput.addEventListener("input", () => {
+            const inputValue = animeInput.value.toLowerCase();
+            suggestionsBox.innerHTML = "";
+
+            if (inputValue.length > 0) {
+                const filteredSuggestions = animeList.filter(anime => 
+                    anime.name.toLowerCase().includes(inputValue)
+                );
+
+                filteredSuggestions.forEach(anime => {
+                    const suggestion = document.createElement("div");
+                    suggestion.textContent = anime.name;
+                    suggestion.onclick = () => {
+                        animeInput.value = anime.name;
+                        suggestionsBox.innerHTML = "";
+                    };
+                    suggestionsBox.appendChild(suggestion);
+                });
+            }
+        });
+
+        // Soumission de la réponse
+        function submitGuess() {
+            if (animeInput.value === currentAnime.name) {
+                message.textContent = "Correct! Bravo 🎉";
+                setTimeout(startGame, 2000);
+            } else {
+                message.textContent = "Incorrect. Réessayez!";
+            }
+        }
+
+        // Démarrer le jeu
+        startGame();
+    </script>
+</body>
+</html>
+
