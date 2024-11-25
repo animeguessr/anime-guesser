@@ -1,41 +1,41 @@
 const express = require('express');
 const path = require('path');
-const app = express();
+const fs = require('fs');
 const { Pool } = require('pg');
 const session = require('express-session');
-const fs = require('fs');
 const levenshtein = require('fast-levenshtein');
 const unaccent = require('unaccent');
-const crypto = require('crypto'); // Import du module crypto pour une génération aléatoire robuste
+const crypto = require('crypto');
+
+const app = express();
 
 // Chemins des répertoires d'images
 const imageDirectory = path.join(__dirname, 'caractere');
-const absoluteImagePath = path.resolve(__dirname, 'caractere');
 const openingDirectory = path.join(__dirname, 'opening', 'opening');
-const imagesDirectory = path.join(__dirname, 'images');
-
+const imagesDirectory = path.join(__dirname, 'images');  // Chemin corrigé pour le répertoire des images
 
 // Configuration du pool de connexions à la base de données
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
     database: 'animeguesse',
-    password: '2fG^cFx$#f7N@', // Remplacez par votre mot de passe
+    password: '2fG^cFx$#f7N@',
     port: 5432
 });
 
 // Middleware
 app.use(express.json());
 app.use(session({
-    secret: 'votre_cle_secrete', // Remplacez par une clé secrète robuste
+    secret: 'votre_cle_secrete',
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Passez à true si vous utilisez HTTPS
 }));
 app.use(express.static(path.join(__dirname)));
 app.use('/caractere', express.static(imageDirectory));
-app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/images', express.static(imagesDirectory));
 app.use('/opening', express.static(openingDirectory));
+
 
 // Fonctions utilitaires
 function normalizeString(str) {
@@ -89,7 +89,8 @@ function shuffleArray(array) {
     return array;
 }
 
-// Routes
+
+// Routes existantes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/game.html', (req, res) => res.sendFile(path.join(__dirname, 'game.html')));
 app.get('/gameplay.html', (req, res) => res.sendFile(path.join(__dirname, 'gameplay.html')));
@@ -105,52 +106,34 @@ app.get('/anime-image', async (req, res) => {
         const level = req.session.level || 'very_easy';
         const difficultyModifier = req.session.difficultyModifier || 0;
         const criteria = getLevelCriteria(level, difficultyModifier);
-
         req.session.usedAnimeIds = req.session.usedAnimeIds || [];
-        
+
         const conditions = ['popularity <= $1', 'anime_type = ANY($2)'];
         const values = [criteria.maxPopularity, criteria.types];
         let paramIndex = 3;
 
-        if (!criteria.includeSequels) {
-            conditions.push('is_sequel = FALSE');
-        }
-
+        if (!criteria.includeSequels) conditions.push(`is_sequel = FALSE`);
         if (criteria.excludeTop) {
             conditions.push(`popularity > $${paramIndex}`);
             values.push(criteria.excludeTop);
             paramIndex++;
         }
-
         if (req.session.usedAnimeIds.length > 0) {
             conditions.push(`id != ALL($${paramIndex})`);
             values.push(req.session.usedAnimeIds);
             paramIndex++;
         }
 
-        const query = `
-            SELECT * FROM animes 
-            WHERE ${conditions.join(' AND ')} 
-            ORDER BY RANDOM() 
-            LIMIT 1
-        `;
+        const query = `SELECT * FROM animes WHERE ${conditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
         let { rows } = await pool.query(query, values);
 
         if (rows.length === 0) {
             req.session.usedAnimeIds = [];
             const resetConditions = conditions.filter(cond => !cond.includes('id != ALL'));
-            const resetQuery = `
-                SELECT * FROM animes 
-                WHERE ${resetConditions.join(' AND ')} 
-                ORDER BY RANDOM() 
-                LIMIT 1
-            `;
+            const resetQuery = `SELECT * FROM animes WHERE ${resetConditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
             const resetResult = await pool.query(resetQuery, values.slice(0, paramIndex - 1));
             rows = resetResult.rows;
-
-            if (rows.length === 0) {
-                return res.status(404).send('Aucun animé trouvé');
-            }
+            if (rows.length === 0) return res.status(404).send('Aucun animé trouvé');
         }
 
         const currentAnime = rows[0];
@@ -171,7 +154,7 @@ app.get('/anime-image', async (req, res) => {
             title: currentAnime.title,
             alt_title: currentAnime.alt_title,
             popularity: currentAnime.popularity,
-            image_url: imageUrl
+            image_url: imageUrl  // S'assurer que l'URL de l'image est correcte
         });
     } catch (error) {
         console.error('Erreur lors de la récupération de l\'image :', error);
