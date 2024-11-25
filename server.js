@@ -9,9 +9,11 @@ const unaccent = require('unaccent');
 const crypto = require('crypto'); // Import du module crypto pour une génération aléatoire robuste
 
 // Chemins des répertoires d'images
-const imageDirectory = path.join('C:', 'Animeguesser', 'caractere');
-const absoluteImagePath = path.resolve('C:/Animeguesser/caractere');
-const openingDirectory = path.join('C:', 'Animeguesser', 'opening', 'opening');
+const imageDirectory = path.join(__dirname, 'caractere');
+const absoluteImagePath = path.resolve(__dirname, 'caractere');
+const openingDirectory = path.join(__dirname, 'opening', 'opening');
+const imagesDirectory = path.join(__dirname, 'images');
+
 
 // Configuration du pool de connexions à la base de données
 const pool = new Pool({
@@ -103,34 +105,52 @@ app.get('/anime-image', async (req, res) => {
         const level = req.session.level || 'very_easy';
         const difficultyModifier = req.session.difficultyModifier || 0;
         const criteria = getLevelCriteria(level, difficultyModifier);
-        req.session.usedAnimeIds = req.session.usedAnimeIds || [];
 
+        req.session.usedAnimeIds = req.session.usedAnimeIds || [];
+        
         const conditions = ['popularity <= $1', 'anime_type = ANY($2)'];
         const values = [criteria.maxPopularity, criteria.types];
         let paramIndex = 3;
 
-        if (!criteria.includeSequels) conditions.push(`is_sequel = FALSE`);
+        if (!criteria.includeSequels) {
+            conditions.push('is_sequel = FALSE');
+        }
+
         if (criteria.excludeTop) {
             conditions.push(`popularity > $${paramIndex}`);
             values.push(criteria.excludeTop);
             paramIndex++;
         }
+
         if (req.session.usedAnimeIds.length > 0) {
             conditions.push(`id != ALL($${paramIndex})`);
             values.push(req.session.usedAnimeIds);
             paramIndex++;
         }
 
-        const query = `SELECT * FROM animes WHERE ${conditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
+        const query = `
+            SELECT * FROM animes 
+            WHERE ${conditions.join(' AND ')} 
+            ORDER BY RANDOM() 
+            LIMIT 1
+        `;
         let { rows } = await pool.query(query, values);
 
         if (rows.length === 0) {
             req.session.usedAnimeIds = [];
             const resetConditions = conditions.filter(cond => !cond.includes('id != ALL'));
-            const resetQuery = `SELECT * FROM animes WHERE ${resetConditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
+            const resetQuery = `
+                SELECT * FROM animes 
+                WHERE ${resetConditions.join(' AND ')} 
+                ORDER BY RANDOM() 
+                LIMIT 1
+            `;
             const resetResult = await pool.query(resetQuery, values.slice(0, paramIndex - 1));
             rows = resetResult.rows;
-            if (rows.length === 0) return res.status(404).send('Aucun animé trouvé');
+
+            if (rows.length === 0) {
+                return res.status(404).send('Aucun animé trouvé');
+            }
         }
 
         const currentAnime = rows[0];
@@ -139,7 +159,7 @@ app.get('/anime-image', async (req, res) => {
 
         const imageFileName = path.basename(currentAnime.image_url);
         const imageUrl = `/images/${imageFileName}`;
-        const imagePath = path.join(__dirname, 'images', imageFileName);
+        const imagePath = path.join(imagesDirectory, imageFileName);
 
         if (!fs.existsSync(imagePath)) {
             console.error('Image non trouvée :', imagePath);
