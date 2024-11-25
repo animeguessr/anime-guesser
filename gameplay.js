@@ -82,54 +82,54 @@ $(document).ready(function () {
     }
     animeImage.on('error', handleImageError);
 
-    // Fonction pour charger une nouvelle image
+    // Fonction pour charger une nouvelle image    // Fonction pour charger une nouvelle image d'animé
     function loadNewAnime() {
-        if (gameOver) return; // Empêcher le chargement de nouvelles images si le jeu est terminé
+        if (gameOver) return // Empêcher le chargement de nouvelles images si le jeu est terminé
 
         // Vérification si le jeu doit se terminer
         if (round >= maxRounds) {
-            gameOver = true;
-            showEndGamePopup();
-            return;
+            gameOver = true
+            showEndGamePopup()
+            return
         }
 
         // Préparation du nouveau round
-        round++;
-        roundNumberElement.text(round);
-        roundStartTime = Date.now();
-        blurValue = 60;
-        defloutageCount = 0;
-        lives = 3;
-        displayLives();
+        round++
+        roundNumberElement.text(round)
+        roundStartTime = Date.now()
+        blurValue = 60
+        defloutageCount = 0
+        lives = 3
+        displayLives()
         animeImage.css({
             'filter': `blur(${blurValue}px)`,
             'opacity': 0
-        });
-        hideResultMessage();
-        answerInput.val('');
-        answerInput.data('titles', []);
+        })
+        hideResultMessage()
+        answerInput.val('')
+        answerInput.data('titles', [])
 
-        // Charger une nouvelle image d'animé
-        fetch('/anime-image')
+        // Charger une nouvelle image d'animé (modifié ici pour utiliser /anime-images)
+        fetch('/anime-images')
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+                return response.json()
             })
             .then(data => {
-                if (!data.image_url || !data.title) throw new Error('Données invalides reçues');
-                animeImage.attr('src', data.image_url).css('opacity', 1);
-                currentAnime = data;
-                errorCount = 0; // Réinitialiser le compteur d'erreurs
+                if (!data.image_url || !data.title) throw new Error('Données invalides reçues')
+                animeImage.attr('src', data.image_url).css('opacity', 1)
+                currentAnime = data
+                errorCount = 0 // Réinitialiser le compteur d'erreurs
             })
             .catch(error => {
-                console.error('Erreur lors du chargement de l\'animé :', error.message);
-                errorCount++;
+                console.error('Erreur lors du chargement de l\'animé :', error.message)
+                errorCount++
                 if (errorCount >= 3) {
-                    showResultMessage('Trop d\'erreurs consécutives. Veuillez réessayer plus tard.', '#e74c3c');
+                    showResultMessage('Trop d\'erreurs consécutives. Veuillez réessayer plus tard.', '#e74c3c')
                 } else {
-                    setTimeout(loadNewAnime, 3000);
+                    setTimeout(loadNewAnime, 3000)
                 }
-            });
+            })
     }
 
     // Fonction pour afficher le popup de fin de jeu

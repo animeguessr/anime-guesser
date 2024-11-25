@@ -101,7 +101,7 @@ app.get('/set-level', (req, res) => {
     res.redirect('/gameplay.html');
 });
 
-app.get('/anime-image', async (req, res) => {
+app.get('/anime-images', async (req, res) => {
     try {
         const level = req.session.level || 'very_easy';
         const difficultyModifier = req.session.difficultyModifier || 0;
