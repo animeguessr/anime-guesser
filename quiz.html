@@ -311,385 +311,401 @@
     </div>
 
 
-    <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-        const difficulty = localStorage.getItem('difficulty') || 'easy'; // Valeur par défaut
-        const response = await fetch(`/anime?difficulty=${difficulty}`);
-        const animes = await response.json();
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const difficulty = localStorage.getItem('difficulty') || 'easy'; // Valeur par défaut
+    const response = await fetch(`/anime?difficulty=${difficulty}`);
+    const animes = await response.json();
 
-        // Créer une liste d'objets avec alt uniquement
-        const animeData = animes.map(anime => {
-            return {
-                alt: anime.alt || anime.nom, // Utiliser nom si alt est indisponible
-                openingpath: anime.openingpath
-            };
-        });
+    // Créer une liste d'objets avec alt uniquement
+    const animeData = animes.map(anime => {
+        return {
+            alt: anime.alt || anime.nom, // Utiliser nom si alt est indisponible
+            openingpath: anime.openingpath
+        };
+    });
 
-        let currentAnime = null;
-        let index = 0;
-        let round = 0;
-        let score = 0;
-        let lives = 3;
-        const initialLives = 3;
-        const totalRounds = 10;
-        let startTime;
+    let currentAnime = null;
+    let index = 0;
+    let round = 0;
+    let score = 0;
+    let lives = 3;
+    const initialLives = 3;
+    const totalRounds = 10;
+    let startTime;
 
-        let usedUnlockVideo = false; // Indique si l'utilisateur a utilisé "Débloquer la vidéo"
-        let listenedTime = 0; // Temps d'écoute de l'audio
+    let usedUnlockVideo = false; // Indique si l'utilisateur a utilisé "Débloquer la vidéo"
+    let listenedTime = 0; // Temps d'écoute de l'audio
 
-        const audioElement = document.getElementById('audio');
-        const videoElement = document.getElementById('video');
-        const playButton = document.getElementById('playPauseButton');
-        const fullscreenButton = document.getElementById('fullscreenButton');
-        const removeBlurButton = document.getElementById('removeBlurButton');
+    const audioElement = document.getElementById('audio');
+    const videoElement = document.getElementById('video');
+    const playButton = document.getElementById('playPauseButton');
+    const fullscreenButton = document.getElementById('fullscreenButton');
+    const removeBlurButton = document.getElementById('removeBlurButton');
 
-        function loadAnime() {
-            if (index < animes.length) {
-                currentAnime = animes[index];
+    // Sélection des boutons "Valider" et "Je ne sais pas" pour le cooldown
+    const validateButton = document.querySelector('.buttons button:nth-child(1)');
+    const skipButton = document.querySelector('.buttons button:nth-child(2)');
 
-                // Construire le chemin relatif
-                let relativePath = currentAnime.openingpath.replace(/^.*[\\/](opening[\\/])/i, '');
-                relativePath = relativePath.replace(/\\/g, '/');
+    function loadAnime() {
+        if (index < animes.length) {
+            currentAnime = animes[index];
 
-                const mediaPath = `/opening/${relativePath}`;
+            // Construire le chemin relatif
+            let relativePath = currentAnime.openingpath.replace(/^.*[\\/](opening[\\/])/i, '');
+            relativePath = relativePath.replace(/\\/g, '/');
 
-                audioElement.src = mediaPath;
-                videoElement.src = mediaPath;
+            const mediaPath = `/opening/${relativePath}`;
 
-                audioElement.style.display = 'block';
-                document.querySelector('.video-player').style.display = 'none'; // Masquer la div parent
+            audioElement.src = mediaPath;
+            videoElement.src = mediaPath;
 
-                // Réinitialiser le flou de la vidéo
-                videoElement.style.filter = 'blur(10px)';
+            audioElement.style.display = 'block';
+            document.querySelector('.video-player').style.display = 'none'; // Masquer la div parent
 
-                // Réinitialiser les variables
-                lives = 3; // Réinitialiser les vies pour le nouveau tour
-                startTime = Date.now();
-                usedUnlockVideo = false;
+            // Réinitialiser le flou de la vidéo
+            videoElement.style.filter = 'blur(10px)';
 
-                // Réinitialiser et démarrer l'audio
-                audioElement.currentTime = 0; // Réinitialise le temps de l'audio
-                audioElement.play();
+            // Réinitialiser les variables
+            lives = 3; // Réinitialiser les vies pour le nouveau tour
+            startTime = Date.now();
+            usedUnlockVideo = false;
 
-                // Réinitialiser la vidéo
-                videoElement.currentTime = 0;
-                videoElement.pause();
-                playButton.textContent = 'Lecture';
-            } else {
-                showEndPopup();
-            }
+            // Réinitialiser et démarrer l'audio
+            audioElement.currentTime = 0; // Réinitialise le temps de l'audio
+            audioElement.play();
+
+            // Réinitialiser la vidéo
+            videoElement.currentTime = 0;
+            videoElement.pause();
+            playButton.textContent = 'Lecture';
+        } else {
+            showEndPopup();
+        }
+    }
+
+    loadAnime();
+
+    // Fonction pour normaliser les chaînes de caractères
+    function normalizeString(str) {
+        return str
+            .toLowerCase()
+            .normalize('NFD') // Décompose les caractères accentués
+            .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
+            .replace(/[^a-z0-9]/g, ''); // Supprime les caractères spéciaux
+    }
+
+    // Fonction pour calculer la similarité (distance de Levenshtein)
+    function levenshteinDistance(a, b) {
+        const matrix = [];
+
+        // Initialisation
+        for (let i = 0; i <= b.length; i++) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= a.length; j++) {
+            matrix[0][j] = j;
         }
 
-        loadAnime();
-
-        // Fonction pour normaliser les chaînes de caractères
-        function normalizeString(str) {
-            return str
-                .toLowerCase()
-                .normalize('NFD') // Décompose les caractères accentués
-                .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
-                .replace(/[^a-z0-9]/g, ''); // Supprime les caractères spéciaux
-        }
-
-        // Fonction pour calculer la similarité (distance de Levenshtein)
-        function levenshteinDistance(a, b) {
-            const matrix = [];
-
-            // Initialisation
-            for (let i = 0; i <= b.length; i++) {
-                matrix[i] = [i];
-            }
-            for (let j = 0; j <= a.length; j++) {
-                matrix[0][j] = j;
-            }
-
-            // Calcul
-            for (let i = 1; i <= b.length; i++) {
-                for (let j = 1; j <= a.length; j++) {
-                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                        matrix[i][j] = matrix[i - 1][j - 1];
-                    } else {
-                        matrix[i][j] = Math.min(
-                            matrix[i - 1][j - 1] + 1, // Substitution
-                            matrix[i][j - 1] + 1,     // Insertion
-                            matrix[i - 1][j] + 1      // Suppression
-                        );
-                    }
-                }
-            }
-
-            return matrix[b.length][a.length];
-        }
-
-        // Fonction pour calculer le score
-        function calculateScore(timeTaken, listenedTime) {
-            // Points de base par difficulté
-            const basePointsPerDifficulty = {
-                'easy': 50,
-                'normal': 100,
-                'hard': 150
-            };
-            const basePoints = basePointsPerDifficulty[difficulty] || 50;
-
-            // Bonus de temps (plus c'est rapide, mieux c'est)
-            const maxTimeBonus = 50; // Bonus maximum de temps
-            const maxTime = 60; // Temps maximum en secondes
-            const timeBonus = Math.max(0, Math.round(maxTimeBonus * ((maxTime - timeTaken) / maxTime)));
-
-            // Bonus de vies restantes
-            const livesBonus = (lives - 1) * 10; // 0 bonus si 1 vie restante, jusqu'à 20 si 3 vies restantes
-
-            // Pénalité si "Débloquer la vidéo" a été utilisé
-            const videoPenalty = usedUnlockVideo ? -20 : 0;
-
-            // Pénalité basée sur le temps d'écoute (plus l'utilisateur a écouté, plus la pénalité est élevée)
-            const audioDuration = audioElement.duration || 1;
-            const listenedPercentage = listenedTime / audioDuration;
-            const listeningPenalty = Math.min(20, Math.round(20 * listenedPercentage)); // Jusqu'à 20 points de pénalité
-
-            // Calcul du score total
-            let totalScore = basePoints + timeBonus + livesBonus + videoPenalty - listeningPenalty;
-
-            // S'assurer que le score est au moins zéro
-            totalScore = Math.max(0, totalScore);
-
-            return totalScore;
-        }
-
-        // Fonction pour afficher la réponse correctement
-        function displayAnswer() {
-            return currentAnime.alt;
-        }
-
-        // Fonction pour valider la réponse
-        async function submitAnswer() {
-            const userInput = document.getElementById('animeInput').value.trim();
-
-            const timeTaken = (Date.now() - startTime) / 1000; // Temps en secondes
-
-            // Calculer le temps d'écoute
-            listenedTime = audioElement.currentTime;
-
-            // Préparer le nom correct
-            const correctName = currentAnime.alt;
-
-            // Normaliser les entrées
-            const normalizedUserInput = normalizeString(userInput);
-            const normalizedCorrectName = normalizeString(correctName);
-
-            // Vérifier la similarité
-            const distance = levenshteinDistance(normalizedUserInput, normalizedCorrectName);
-            const maxLen = Math.max(normalizedUserInput.length, normalizedCorrectName.length);
-            const similarity = 1 - distance / maxLen;
-
-            const similarityThreshold = 0.6; // Ajustez ce seuil selon vos préférences (entre 0 et 1)
-            const isValid = similarity >= similarityThreshold;
-
-            const resultElement = document.getElementById('result');
-
-            if (isValid) {
-                const roundScore = calculateScore(timeTaken, listenedTime);
-                score += roundScore;
-                resultElement.textContent = `Bonne réponse ! Score du tour : ${roundScore} points`;
-                setTimeout(nextRound, 3000); // Attend 3 secondes avant de passer au round suivant
-            } else {
-                lives--;
-                if (lives > 0) {
-                    resultElement.textContent = `Mauvaise réponse. Il vous reste ${lives} vie(s).`;
+        // Calcul
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
                 } else {
-                    resultElement.textContent = `Vous n'avez plus de vies. La bonne réponse était : ${displayAnswer()}.`;
-                    setTimeout(nextRound, 3000);
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1, // Substitution
+                        matrix[i][j - 1] + 1,     // Insertion
+                        matrix[i - 1][j] + 1      // Suppression
+                    );
                 }
             }
         }
 
-        window.submitAnswer = submitAnswer;
+        return matrix[b.length][a.length];
+    }
 
-        // Fonction pour passer à l'anime suivant
-        function nextRound() {
-            round++;
-            if (round < totalRounds) {
-                index++;
-                document.getElementById('result').textContent = '';
-                document.getElementById('animeInput').value = '';
-                lives = 3; // Réinitialiser les vies pour le nouveau tour
-                loadAnime();
-            } else {
-                showEndPopup();
-            }
-        }
+    // Fonction pour calculer le score
+    function calculateScore(timeTaken, listenedTime) {
+        // Points de base par difficulté
+        const basePointsPerDifficulty = {
+            'easy': 50,
+            'normal': 100,
+            'hard': 150
+        };
+        const basePoints = basePointsPerDifficulty[difficulty] || 50;
 
-        window.nextRound = nextRound;
+        // Bonus de temps (plus c'est rapide, mieux c'est)
+        const maxTimeBonus = 50; // Bonus maximum de temps
+        const maxTime = 60; // Temps maximum en secondes
+        const timeBonus = Math.max(0, Math.round(maxTimeBonus * ((maxTime - timeTaken) / maxTime)));
 
-        // Fonction pour passer à l'anime suivant sans valider
-        function skipAnswer() {
-            const resultElement = document.getElementById('result');
-            resultElement.textContent = `Vous n'avez pas trouvé la réponse. L'anime était : ${displayAnswer()}.`;
+        // Bonus de vies restantes
+        const livesBonus = (lives - 1) * 10; // 0 bonus si 1 vie restante, jusqu'à 20 si 3 vies restantes
+
+        // Pénalité si "Débloquer la vidéo" a été utilisé
+        const videoPenalty = usedUnlockVideo ? -20 : 0;
+
+        // Pénalité basée sur le temps d'écoute (plus l'utilisateur a écouté, plus la pénalité est élevée)
+        const audioDuration = audioElement.duration || 1;
+        const listenedPercentage = listenedTime / audioDuration;
+        const listeningPenalty = Math.min(20, Math.round(20 * listenedPercentage)); // Jusqu'à 20 points de pénalité
+
+        // Calcul du score total
+        let totalScore = basePoints + timeBonus + livesBonus + videoPenalty - listeningPenalty;
+
+        // S'assurer que le score est au moins zéro
+        totalScore = Math.max(0, totalScore);
+
+        return totalScore;
+    }
+
+    // Fonction pour afficher la réponse correctement
+    function displayAnswer() {
+        return currentAnime.alt;
+    }
+
+    // Fonction pour valider la réponse
+    async function submitAnswer() {
+        // Démarrer le cooldown pour le bouton "Valider"
+        validateButton.disabled = true;
+        setTimeout(() => {
+            validateButton.disabled = false;
+        }, 3000);
+
+        const userInput = document.getElementById('animeInput').value.trim();
+
+        const timeTaken = (Date.now() - startTime) / 1000; // Temps en secondes
+
+        // Calculer le temps d'écoute
+        listenedTime = audioElement.currentTime;
+
+        // Préparer le nom correct
+        const correctName = currentAnime.alt;
+
+        // Normaliser les entrées
+        const normalizedUserInput = normalizeString(userInput);
+        const normalizedCorrectName = normalizeString(correctName);
+
+        // Vérifier la similarité
+        const distance = levenshteinDistance(normalizedUserInput, normalizedCorrectName);
+        const maxLen = Math.max(normalizedUserInput.length, normalizedCorrectName.length);
+        const similarity = 1 - distance / maxLen;
+
+        const similarityThreshold = 0.6; // Ajustez ce seuil selon vos préférences (entre 0 et 1)
+        const isValid = similarity >= similarityThreshold;
+
+        const resultElement = document.getElementById('result');
+
+        if (isValid) {
+            const roundScore = calculateScore(timeTaken, listenedTime);
+            score += roundScore;
+            resultElement.textContent = `Bonne réponse ! Score du tour : ${roundScore} points`;
             setTimeout(nextRound, 3000); // Attend 3 secondes avant de passer au round suivant
-        }
-
-        window.skipAnswer = skipAnswer;
-
-        // Fonction pour débloquer la vidéo
-        function unlockVideo() {
-            audioElement.style.display = 'none';
-            document.querySelector('.video-player').style.display = 'flex'; // Affiche la div parent
-            audioElement.pause();
-            videoElement.currentTime = 0; // Réinitialise le temps de la vidéo
-            videoElement.play(); // Démarre la lecture vidéo
-            playButton.textContent = 'Pause';
-
-            usedUnlockVideo = true; // Indiquer que "Débloquer la vidéo" a été utilisé
-        }
-
-        window.unlockVideo = unlockVideo;
-
-        // Contrôles personnalisés
-
-        // Fonction pour basculer la lecture/pause
-        playButton.addEventListener('click', function() {
-            if (videoElement.paused) {
-                videoElement.play();
-                playButton.textContent = 'Pause';
+        } else {
+            lives--;
+            if (lives > 0) {
+                resultElement.textContent = `Mauvaise réponse. Il vous reste ${lives} vie(s).`;
             } else {
-                videoElement.pause();
-                playButton.textContent = 'Lecture';
+                resultElement.textContent = `Vous n'avez plus de vies. La bonne réponse était : ${displayAnswer()}.`;
+                setTimeout(nextRound, 3000);
             }
-        });
-
-        // Fonction pour activer le plein écran
-        fullscreenButton.addEventListener('click', function() {
-            if (videoElement.requestFullscreen) {
-                videoElement.requestFullscreen();
-            } else if (videoElement.webkitRequestFullscreen) { // Safari
-                videoElement.webkitRequestFullscreen();
-            } else if (videoElement.msRequestFullscreen) { // IE11
-                videoElement.msRequestFullscreen();
-            }
-        });
-
-        // Fonction pour enlever le flou
-        removeBlurButton.addEventListener('click', function() {
-            videoElement.style.filter = 'none';
-        });
-
-        // Fonction pour activer l'autocomplétion
-        function autocomplete(input, animeData) {
-            let currentFocus;
-            input.addEventListener("input", function() {
-                let val = this.value.trim();
-                closeAllLists();
-                if (!val) { return false; }
-                currentFocus = -1;
-
-                let listContainer = document.createElement("div");
-                listContainer.setAttribute("id", this.id + "autocomplete-list");
-                listContainer.setAttribute("class", "autocomplete-items");
-                this.parentNode.appendChild(listContainer);
-
-                const normalizedVal = normalizeString(val);
-                const suggestionsAdded = new Set(); // Pour éviter les doublons
-
-                for (let i = 0; i < animeData.length; i++) {
-                    const alt = animeData[i].alt;
-
-                    const normalizedAlt = normalizeString(alt);
-                    if (normalizedAlt.includes(normalizedVal)) {
-                        let displayText = alt;
-
-                        // Vérifier si la suggestion a déjà été ajoutée
-                        if (!suggestionsAdded.has(displayText)) {
-                            suggestionsAdded.add(displayText);
-
-                            let item = document.createElement("div");
-                            item.innerHTML = "<strong>" + alt.substr(0, val.length) + "</strong>";
-                            item.innerHTML += alt.substr(val.length);
-                            item.innerHTML += "<input type='hidden' value='" + alt + "'>";
-
-                            item.addEventListener("click", function() {
-                                input.value = this.getElementsByTagName("input")[0].value;
-                                closeAllLists();
-                            });
-                            listContainer.appendChild(item);
-                        }
-                    }
-                }
-            });
-
-            input.addEventListener("keydown", function(e) {
-                let list = document.getElementById(this.id + "autocomplete-list");
-                if (list) list = list.getElementsByTagName("div");
-                if (e.keyCode === 40) { // Touche flèche bas
-                    currentFocus++;
-                    addActive(list);
-                } else if (e.keyCode === 38) { // Touche flèche haut
-                    currentFocus--;
-                    addActive(list);
-                } else if (e.keyCode === 13) { // Touche Entrée
-                    e.preventDefault();
-                    if (currentFocus > -1) {
-                        if (list) list[currentFocus].click();
-                    }
-                }
-            });
-
-            function addActive(list) {
-                if (!list) return false;
-                removeActive(list);
-                if (currentFocus >= list.length) currentFocus = 0;
-                if (currentFocus < 0) currentFocus = (list.length - 1);
-                list[currentFocus].classList.add("autocomplete-active");
-            }
-
-            function removeActive(list) {
-                for (let i = 0; i < list.length; i++) {
-                    list[i].classList.remove("autocomplete-active");
-                }
-            }
-
-            function closeAllLists(element) {
-                let items = document.getElementsByClassName("autocomplete-items");
-                for (let i = 0; i < items.length; i++) {
-                    if (element !== items[i] && element !== input) {
-                        items[i].parentNode.removeChild(items[i]);
-                    }
-                }
-            }
-
-            document.addEventListener("click", function(e) {
-                closeAllLists(e.target);
-            });
         }
+    }
 
-        autocomplete(document.getElementById("animeInput"), animeData);
+    window.submitAnswer = submitAnswer;
 
-        // Fonctions pour la pop-up de fin
-        function showEndPopup() {
-            const endPopup = document.getElementById('endPopup');
-            const finalScoreElement = document.getElementById('finalScore');
-            finalScoreElement.textContent = `Votre score final est de ${score} points !`;
-            endPopup.style.display = 'flex';
-            document.body.classList.add('popup-active');
-        }
-
-        function restartQuiz() {
-            // Réinitialiser les variables du quiz
-            index = 0;
-            round = 0;
-            score = 0;
-            lives = 3;
-            document.getElementById('endPopup').style.display = 'none';
-            document.body.classList.remove('popup-active');
+    // Fonction pour passer à l'anime suivant
+    function nextRound() {
+        round++;
+        if (round < totalRounds) {
+            index++;
             document.getElementById('result').textContent = '';
             document.getElementById('animeInput').value = '';
+            lives = 3; // Réinitialiser les vies pour le nouveau tour
             loadAnime();
+        } else {
+            showEndPopup();
         }
+    }
 
-        function goToMenu() {
-            window.location.href = 'index.html';
+    window.nextRound = nextRound;
+
+    // Fonction pour passer à l'anime suivant sans valider
+    function skipAnswer() {
+        // Démarrer le cooldown pour le bouton "Je ne sais pas"
+        skipButton.disabled = true;
+        setTimeout(() => {
+            skipButton.disabled = false;
+        }, 3000);
+
+        const resultElement = document.getElementById('result');
+        resultElement.textContent = `Vous n'avez pas trouvé la réponse. L'anime était : ${displayAnswer()}.`;
+        setTimeout(nextRound, 3000); // Attend 3 secondes avant de passer au round suivant
+    }
+
+    window.skipAnswer = skipAnswer;
+
+    // Fonction pour débloquer la vidéo
+    function unlockVideo() {
+        audioElement.style.display = 'none';
+        document.querySelector('.video-player').style.display = 'flex'; // Affiche la div parent
+        audioElement.pause();
+        videoElement.currentTime = 0; // Réinitialise le temps de la vidéo
+        videoElement.play(); // Démarre la lecture vidéo
+        playButton.textContent = 'Pause';
+
+        usedUnlockVideo = true; // Indiquer que "Débloquer la vidéo" a été utilisé
+    }
+
+    window.unlockVideo = unlockVideo;
+
+    // Contrôles personnalisés
+
+    // Fonction pour basculer la lecture/pause
+    playButton.addEventListener('click', function() {
+        if (videoElement.paused) {
+            videoElement.play();
+            playButton.textContent = 'Pause';
+        } else {
+            videoElement.pause();
+            playButton.textContent = 'Lecture';
         }
-
     });
-    </script>
+
+    // Fonction pour activer le plein écran
+    fullscreenButton.addEventListener('click', function() {
+        if (videoElement.requestFullscreen) {
+            videoElement.requestFullscreen();
+        } else if (videoElement.webkitRequestFullscreen) { // Safari
+            videoElement.webkitRequestFullscreen();
+        } else if (videoElement.msRequestFullscreen) { // IE11
+            videoElement.msRequestFullscreen();
+        }
+    });
+
+    // Fonction pour enlever le flou
+    removeBlurButton.addEventListener('click', function() {
+        videoElement.style.filter = 'none';
+    });
+
+    // Fonction pour activer l'autocomplétion
+    function autocomplete(input, animeData) {
+        let currentFocus;
+        input.addEventListener("input", function() {
+            let val = this.value.trim();
+            closeAllLists();
+            if (!val) { return false; }
+            currentFocus = -1;
+
+            let listContainer = document.createElement("div");
+            listContainer.setAttribute("id", this.id + "autocomplete-list");
+            listContainer.setAttribute("class", "autocomplete-items");
+            this.parentNode.appendChild(listContainer);
+
+            const normalizedVal = normalizeString(val);
+            const suggestionsAdded = new Set(); // Pour éviter les doublons
+
+            for (let i = 0; i < animeData.length; i++) {
+                const alt = animeData[i].alt;
+
+                const normalizedAlt = normalizeString(alt);
+                if (normalizedAlt.includes(normalizedVal)) {
+                    let displayText = alt;
+
+                    // Vérifier si la suggestion a déjà été ajoutée
+                    if (!suggestionsAdded.has(displayText)) {
+                        suggestionsAdded.add(displayText);
+
+                        let item = document.createElement("div");
+                        item.innerHTML = "<strong>" + alt.substr(0, val.length) + "</strong>";
+                        item.innerHTML += alt.substr(val.length);
+                        item.innerHTML += "<input type='hidden' value='" + alt + "'>";
+
+                        item.addEventListener("click", function() {
+                            input.value = this.getElementsByTagName("input")[0].value;
+                            closeAllLists();
+                        });
+                        listContainer.appendChild(item);
+                    }
+                }
+            }
+        });
+
+        input.addEventListener("keydown", function(e) {
+            let list = document.getElementById(this.id + "autocomplete-list");
+            if (list) list = list.getElementsByTagName("div");
+            if (e.keyCode === 40) { // Touche flèche bas
+                currentFocus++;
+                addActive(list);
+            } else if (e.keyCode === 38) { // Touche flèche haut
+                currentFocus--;
+                addActive(list);
+            } else if (e.keyCode === 13) { // Touche Entrée
+                e.preventDefault();
+                if (currentFocus > -1) {
+                    if (list) list[currentFocus].click();
+                }
+            }
+        });
+
+        function addActive(list) {
+            if (!list) return false;
+            removeActive(list);
+            if (currentFocus >= list.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (list.length - 1);
+            list[currentFocus].classList.add("autocomplete-active");
+        }
+
+        function removeActive(list) {
+            for (let i = 0; i < list.length; i++) {
+                list[i].classList.remove("autocomplete-active");
+            }
+        }
+
+        function closeAllLists(element) {
+            let items = document.getElementsByClassName("autocomplete-items");
+            for (let i = 0; i < items.length; i++) {
+                if (element !== items[i] && element !== input) {
+                    items[i].parentNode.removeChild(items[i]);
+                }
+            }
+        }
+
+        document.addEventListener("click", function(e) {
+            closeAllLists(e.target);
+        });
+    }
+
+    autocomplete(document.getElementById("animeInput"), animeData);
+
+    // Fonctions pour la pop-up de fin
+    function showEndPopup() {
+        const endPopup = document.getElementById('endPopup');
+        const finalScoreElement = document.getElementById('finalScore');
+        finalScoreElement.textContent = `Votre score final est de ${score} points !`;
+        endPopup.style.display = 'flex';
+        document.body.classList.add('popup-active');
+    }
+
+    function restartQuiz() {
+        // Réinitialiser les variables du quiz
+        index = 0;
+        round = 0;
+        score = 0;
+        lives = 3;
+        document.getElementById('endPopup').style.display = 'none';
+        document.body.classList.remove('popup-active');
+        document.getElementById('result').textContent = '';
+        document.getElementById('animeInput').value = '';
+        loadAnime();
+    }
+
+    function goToMenu() {
+        window.location.href = 'index.html';
+    }
+
+});
+</script>
 </body>
 </html>

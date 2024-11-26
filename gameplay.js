@@ -3,7 +3,7 @@ $(document).ready(function () {
     const urlParams = new URLSearchParams(window.location.search);
     const level = urlParams.get('level') || 'very_easy';
 
-    // Afficher le nom du niveau
+    // Niveaux de difficulté
     const levelNames = {
         'very_easy': 'Très Simple',
         'easy': 'Simple',
@@ -12,9 +12,6 @@ $(document).ready(function () {
         'impossible': 'Impossible'
     };
     levelNameElement.text(levelNames[level]);
-
-    // Définir le niveau sur le serveur
-    fetch(`/set-level?level=${level}`);
 
     // Variables du jeu
     const animeImage = $('#anime-image');
@@ -27,7 +24,7 @@ $(document).ready(function () {
     const scoreElement = $('#score');
     const roundNumberElement = $('#round-number');
     let roundStartTime = 0;
-    let currentAnime; // Variable pour stocker l'animé actuel
+    let currentAnime = null;
 
     let blurValue = 60; // Valeur initiale du flou
     const maxBlurValue = 60;
@@ -37,24 +34,25 @@ $(document).ready(function () {
     let score = 0;
     let round = 0;
     const maxRounds = 10;
-    let gameOver = false; // Variable pour suivre l'état du jeu
-    let errorCount = 0; // Pour gérer les erreurs consécutives
+    let gameOver = false;
+    let cooldown = false; // Variable pour gérer le verrouillage après une bonne réponse
 
-    // Fonction pour initialiser une nouvelle partie
+    // Initialisation du jeu
     function resetGame() {
         score = 0;
         round = 0;
         gameOver = false;
         lives = 3;
-        blurValue = 60;
+        blurValue = maxBlurValue;
         defloutageCount = 0;
+        cooldown = false;
         $('#end-game-modal').hide();
         displayLives();
         scoreElement.text(score);
         loadNewAnime();
     }
 
-    // Fonction pour afficher les vies
+    // Afficher les vies
     function displayLives() {
         livesContainer.empty();
         for (let i = 0; i < lives; i++) {
@@ -62,85 +60,71 @@ $(document).ready(function () {
         }
     }
 
-    // Fonction pour afficher le message de résultat avec animation
+    // Afficher un message temporaire
     function showResultMessage(text, color) {
-        resultMessage.css('color', color);
-        resultMessage.text(text);
-        resultMessage.addClass('show');
+        resultMessage.text(text).css('color', color).addClass('show');
     }
 
-    // Fonction pour cacher le message de résultat
+    // Cacher le message de résultat
     function hideResultMessage() {
         resultMessage.removeClass('show');
     }
 
     // Gestion des erreurs d'image
-    function handleImageError() {
+    animeImage.on('error', () => {
         animeImage.attr('src', '/path/to/backup-image.jpg'); // Image par défaut
         showResultMessage('Image non trouvée. Passons au suivant.', '#e67e22');
         setTimeout(loadNewAnime, 3000);
-    }
-    animeImage.on('error', handleImageError);
+    });
 
-    // Fonction pour charger une nouvelle image    // Fonction pour charger une nouvelle image d'animé
+    // Charger un nouvel animé
     function loadNewAnime() {
-        if (gameOver) return // Empêcher le chargement de nouvelles images si le jeu est terminé
+        if (gameOver) return;
 
-        // Vérification si le jeu doit se terminer
         if (round >= maxRounds) {
-            gameOver = true
-            showEndGamePopup()
-            return
+            showEndGamePopup();
+            return;
         }
 
-        // Préparation du nouveau round
-        round++
-        roundNumberElement.text(round)
-        roundStartTime = Date.now()
-        blurValue = 60
-        defloutageCount = 0
-        lives = 3
-        displayLives()
+        // Préparation du round
+        round++;
+        roundNumberElement.text(round);
+        blurValue = maxBlurValue;
+        defloutageCount = 0;
+        cooldown = false; // Réinitialiser le cooldown
         animeImage.css({
             'filter': `blur(${blurValue}px)`,
             'opacity': 0
-        })
-        hideResultMessage()
-        answerInput.val('')
-        answerInput.data('titles', [])
+        });
+        hideResultMessage();
+        answerInput.val('');
+        answerInput.data('titles', []);
 
-        // Charger une nouvelle image d'animé (modifié ici pour utiliser /anime-images)
         fetch('/anime-images')
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-                return response.json()
+                if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
+                return response.json();
             })
             .then(data => {
-                if (!data.image_url || !data.title) throw new Error('Données invalides reçues')
-                animeImage.attr('src', data.image_url).css('opacity', 1)
-                currentAnime = data
-                errorCount = 0 // Réinitialiser le compteur d'erreurs
+                animeImage.attr('src', data.image_url).css('opacity', 1);
+                currentAnime = data;
             })
             .catch(error => {
-                console.error('Erreur lors du chargement de l\'animé :', error.message)
-                errorCount++
-                if (errorCount >= 3) {
-                    showResultMessage('Trop d\'erreurs consécutives. Veuillez réessayer plus tard.', '#e74c3c')
-                } else {
-                    setTimeout(loadNewAnime, 3000)
-                }
-            })
+                console.error('Erreur lors du chargement de l\'animé :', error.message);
+                showResultMessage('Erreur de chargement. Veuillez réessayer.', '#e74c3c');
+            });
     }
 
-    // Fonction pour afficher le popup de fin de jeu
+    // Afficher le popup de fin de jeu
     function showEndGamePopup() {
+        gameOver = true;
         $('#final-score').text(score);
         $('#rounds-played').text(round);
         $('#total-rounds').text(maxRounds);
-        $('#end-game-modal').css('display', 'flex');
+        $('#end-game-modal').show();
     }
 
-    // Initialisation de l'autocomplétion
+    // Autocomplétion
     answerInput.autocomplete({
         source: function (request, response) {
             $.ajax({
@@ -155,7 +139,7 @@ $(document).ready(function () {
                     response(suggestions);
                 },
                 error: function (err) {
-                    console.error('Erreur lors de la récupération des suggestions:', err);
+                    console.error('Erreur lors de la récupération des suggestions :', err);
                 }
             });
         },
@@ -165,9 +149,9 @@ $(document).ready(function () {
         }
     });
 
-    // Événements des boutons
+    // Gestion du bouton "Valider"
     submitButton.on('click', () => {
-        if (gameOver) return; // Ignorer si le jeu est terminé
+        if (gameOver || cooldown) return;
 
         const userAnswer = answerInput.val().trim();
         if (!userAnswer) return;
@@ -180,24 +164,26 @@ $(document).ready(function () {
             .then(response => response.json())
             .then(data => {
                 if (data.correct) {
-                    const pointsEarned = calculateScore(true, Date.now() - roundStartTime);
+                    cooldown = true; // Activer le cooldown
+                    const pointsEarned = Math.max(10 - Math.floor((Date.now() - roundStartTime) / 1000), 1); // Exemple de calcul de points
                     score += pointsEarned;
                     scoreElement.text(score);
                     showResultMessage(`Bonne réponse ! Vous gagnez ${pointsEarned} points.`, '#2ecc71');
-                    setTimeout(loadNewAnime, 2000);
+                    setTimeout(loadNewAnime, 3000);
                 } else {
                     lives--;
                     displayLives();
                     if (lives > 0) {
-                        showResultMessage(`Mauvaise réponse ! Il vous reste ${lives} vies.`, '#e74c3c');
+                        showResultMessage(`Mauvaise réponse. Réessayez.`, '#e74c3c');
                     } else {
-                        showResultMessage(`Perdu ! La bonne réponse était : ${data.correctAnswer}`, '#e74c3c');
-                        setTimeout(loadNewAnime, 3000);
+                        showResultMessage(`Game Over. La bonne réponse était : ${data.correctAnswer}`, '#e74c3c');
+                        setTimeout(showEndGamePopup, 3000);
                     }
                 }
             });
     });
 
+    // Gestion du bouton "Déflouter"
     deflouterButton.on('click', () => {
         if (blurValue > 0) {
             blurValue -= blurStep;
@@ -206,9 +192,11 @@ $(document).ready(function () {
         }
     });
 
+    // Gestion du bouton "Je sais pas"
     skipButton.on('click', () => {
-        if (gameOver) return; // Ignorer si le jeu est terminé
+        if (gameOver || cooldown) return;
 
+        cooldown = true; // Activer le cooldown
         fetch('/current-anime-answer')
             .then(response => response.json())
             .then(data => {
@@ -217,13 +205,14 @@ $(document).ready(function () {
             });
     });
 
+    // Bouton "Recommencer"
     $('#restart-button').on('click', resetGame);
 
+    // Bouton "Menu"
     $('#menu-button').on('click', () => {
         window.location.href = 'index.html';
     });
 
-    // Charger la première image d'animé
+    // Démarrage de la partie
     resetGame();
 });
- 

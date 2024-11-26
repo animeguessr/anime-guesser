@@ -7,42 +7,234 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <!-- Lien vers Bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Votre fichier CSS personnalisé -->
-    <link rel="stylesheet" href="styles.css">
+    <!-- Styles personnalisés -->
+    <style>
+        /* Style global */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle, #0f0f0f, #050505);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Conteneur principal */
+        .sop-results-container {
+            width: 90%;
+            max-width: 1200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        /* Titre de la page */
+        .sop-results-title {
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Catégories */
+        .sop-categories {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .sop-category-title {
+            flex: 1;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 0 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Colonnes de résultats */
+        .sop-columns-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .sop-column {
+            flex: 1;
+            min-width: 250px;
+            margin: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        /* Items de résultats */
+        .sop-result-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sop-result-item:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .sop-result-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-right: 15px;
+            border: 2px solid #ffffff;
+        }
+
+        .sop-result-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        /* Bouton de redémarrage */
+        .sop-restart-button {
+            display: block;
+            margin: 30px auto 0;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffffff;
+            background: linear-gradient(135deg, #4444ff, #8888ff);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .sop-restart-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Arrière-plan animé */
+        .background-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px,
+                transparent 50px
+            ),
+            repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px,
+                transparent 50px
+            );
+            z-index: 0;
+            animation: gridAnimation 10s linear infinite;
+        }
+
+        @keyframes gridAnimation {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(-50px, -50px);
+            }
+        }
+
+        /* Media Queries pour responsivité supplémentaire */
+        @media (max-width: 768px) {
+            .sop-results-title {
+                font-size: 2.5em;
+            }
+
+            .sop-category-title {
+                font-size: 1.3em;
+            }
+
+            .sop-result-name {
+                font-size: 1em;
+            }
+
+            .sop-restart-button {
+                font-size: 1em;
+                padding: 10px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sop-results-title {
+                font-size: 2em;
+            }
+
+            .sop-category-title {
+                font-size: 1.1em;
+            }
+
+            .sop-result-name {
+                font-size: 0.9em;
+            }
+
+            .sop-result-image {
+                width: 50px;
+                height: 50px;
+                margin-right: 10px;
+            }
+
+            .sop-restart-button {
+                font-size: 0.9em;
+                padding: 8px 16px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="background-grid"></div>
     <div class="sop-results-container">
+        <div class="sop-results-title">Résultats</div>
         <div class="sop-categories">
             <div class="sop-category-title sop-pass-title">Pass</div>
             <div class="sop-category-title sop-smash-title">Smash</div>
             <div class="sop-category-title sop-ultra-smash-title">Ultra Smash</div>
         </div>
         <div class="sop-columns-container">
-            <div class="sop-columns">
-                <div class="sop-column" id="sop-pass-column"></div>
-                <div class="sop-column" id="sop-smash-column"></div>
-                <div class="sop-column" id="sop-ultraSmash-column"></div>
-            </div>
+            <div class="sop-column" id="sop-pass-column"></div>
+            <div class="sop-column" id="sop-smash-column"></div>
+            <div class="sop-column" id="sop-ultra-smash-column"></div>
         </div>
         <button class="sop-restart-button" onclick="restartGame()">Recommencer</button>
     </div>
+    
     <script>
-        fetch('/get-results')
-            .then(response => response.json())
-            .then(results => {
-                displayResults('sop-pass-column', results.pass);
-                displayResults('sop-smash-column', results.smash);
-                displayResults('sop-ultraSmash-column', results.ultraSmash);
-            })
-            .catch(error => {
-                console.error('Erreur lors de la récupération des résultats :', error);
-            });
-
+        // Fonction pour afficher les résultats dans les colonnes correspondantes
         function displayResults(columnId, characters) {
             const column = document.getElementById(columnId);
             if (!characters || characters.length === 0) {
                 const noResult = document.createElement('p');
                 noResult.textContent = 'Aucun résultat';
+                noResult.style.textAlign = 'center';
+                noResult.style.color = '#ffffff';
                 column.appendChild(noResult);
                 return;
             }
@@ -51,13 +243,13 @@
                 item.classList.add('sop-result-item');
 
                 const img = document.createElement('img');
-                img.src = character.image_url;
-                img.alt = character.name;
-                img.title = character.name;
+                img.src = character.image_url || "https://via.placeholder.com/60";
+                img.alt = character.name || "Character Image";
+                img.title = character.name || "Nom du personnage";
                 img.classList.add('sop-result-image');
 
                 const name = document.createElement('p');
-                name.textContent = character.name;
+                name.textContent = character.name || "Nom non disponible";
                 name.classList.add('sop-result-name');
 
                 item.appendChild(img);
@@ -66,9 +258,37 @@
             });
         }
 
+        // Fonction pour redémarrer le jeu
         function restartGame() {
             window.location.href = 'smash_or_pass_select.html';
         }
+
+        // Récupération des résultats depuis le serveur
+        fetch('/get-results')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Erreur réseau lors de la récupération des résultats.");
+                }
+                return response.json();
+            })
+            .then(results => {
+                displayResults('sop-pass-column', results.pass);
+                displayResults('sop-smash-column', results.smash);
+                displayResults('sop-ultra-smash-column', results.ultraSmash);
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des résultats :', error);
+                // Afficher un message d'erreur à l'utilisateur
+                const columns = ['sop-pass-column', 'sop-smash-column', 'sop-ultra-smash-column'];
+                columns.forEach(columnId => {
+                    const column = document.getElementById(columnId);
+                    const errorMessage = document.createElement('p');
+                    errorMessage.textContent = 'Erreur de chargement des résultats.';
+                    errorMessage.style.textAlign = 'center';
+                    errorMessage.style.color = '#ff4444';
+                    column.appendChild(errorMessage);
+                });
+            });
     </script>
 </body>
 </html>

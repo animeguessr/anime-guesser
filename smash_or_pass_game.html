@@ -7,23 +7,310 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <!-- Lien vers Bootstrap -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Votre fichier CSS personnalisé -->
-    <link rel="stylesheet" href="styles.css">
+    <!-- Styles personnalisés -->
+    <style>
+      /* Style global */
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: radial-gradient(circle, #0f0f0f, #050505);
+        color: white;
+        overflow: hidden;
+      }
+    
+      /* Conteneur principal */
+      .sop-game-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        padding: 20px; /* Ajout d'un padding pour éviter que le contenu touche les bords sur petits écrans */
+      }
+    
+      /* Titre du jeu */
+      .sop-title {
+        position: absolute;
+        top: -6px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 3em;
+        font-weight: bold;
+        color: #ffffff;
+        text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 255, 255, 0.6);
+      }
+
+      /* Nom du personnage */
+      #sop-character-title {
+        margin-top: 20px;
+        font-size: 2em;
+        font-weight: bold;
+        color: #ffffff;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+    
+      /* Style de l'image avec contraintes de taille */
+      .sop-character-image {
+        width: 100%;
+        max-width: 700px;
+        min-width: 300px; /* Taille minimale */
+        height: auto;
+        max-height: 900px; /* Taille maximale */
+        overflow: hidden; /* Pour s'assurer que l'image ne dépasse pas du conteneur */
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .sop-character-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Maintient l'aspect ratio et couvre tout le conteneur */
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+    
+      .sop-character-image:hover img {
+        transform: scale(1.03);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
+      }
+    
+      /* Conteneur des boutons */
+      .sop-button-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 30px;
+        flex-wrap: wrap; /* Permet aux boutons de passer à la ligne sur les petits écrans */
+        justify-content: center;
+      }
+    
+      /* Boutons stylisés */
+      .sop-action-button {
+        font-size: 1.4em;
+        font-weight: bold;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        color: black; /* Texte noir */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      }
+    
+      .sop-pass-btn {
+        background: linear-gradient(135deg, #ff4444, #ff8888);
+      }
+    
+      .sop-smash-btn {
+        background: linear-gradient(135deg, #44ff44, #88ff88);
+      }
+    
+      .sop-ultra-smash-btn {
+        background: linear-gradient(135deg, #4444ff, #8888ff);
+      }
+    
+      .sop-action-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7);
+      }
+    
+      /* Arrière-plan animé */
+      .background-grid {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: repeating-linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px,
+            transparent 50px
+          ),
+          repeating-linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px,
+            transparent 50px
+          );
+        z-index: 0;
+        animation: gridAnimation 2s linear infinite;
+      }
+    
+      @keyframes gridAnimation {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(-50px, -50px);
+        }
+      }
+
+      /* Media Queries pour responsivité supplémentaire */
+      @media (max-width: 768px) {
+        .sop-title {
+          font-size: 2.5em;
+        }
+
+        #sop-character-title {
+          font-size: 1.5em;
+        }
+
+        .sop-action-button {
+          font-size: 1.2em;
+          padding: 10px 20px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .sop-title {
+          font-size: 2em;
+        }
+
+        #sop-character-title {
+          font-size: 1.2em;
+        }
+
+        .sop-action-button {
+          font-size: 1em;
+          padding: 8px 16px;
+        }
+
+        .sop-character-image {
+          min-width: 200px;
+          max-width: 90%;
+        }
+      }
+    </style>
 </head>
+
 <body>
-    <div class="sop-game-container">
-        <div class="sop-character-info">
-            <h2 id="sop-character-name" class="sop-character-name"></h2>
-            <div class="sop-character-image">
-                <img id="sop-character-image" src="" alt="Character Image">
-            </div>
-        </div>
-        <div class="sop-button-container">
-            <button class="sop-action-button sop-pass-btn" onclick="recordChoice('pass')">Pass</button>
-            <button class="sop-action-button sop-smash-btn" onclick="recordChoice('smash')">Smash</button>
-            <button class="sop-action-button sop-ultra-smash-btn" onclick="recordChoice('ultraSmash')">Ultra Smash</button>
-        </div>
+  <div class="background-grid"></div>
+  <div class="sop-game-container">
+    <div class="sop-title">Smash or Pass</div>
+    <div id="sop-character-title">Dynamic Character Name</div>
+    <div class="sop-character-image">
+      <img id="sop-character-image" src="https://via.placeholder.com/700x900" alt="Character Image">
     </div>
-    <script src="smash_or_pass_game.js"></script>
+    <div class="sop-button-container">
+      <button class="sop-action-button sop-pass-btn">Pass</button>
+      <button class="sop-action-button sop-smash-btn">Smash</button>
+      <button class="sop-action-button sop-ultra-smash-btn">Ultra Smash</button>
+    </div>
+  </div>
+  
+  <script>
+    // smash_or_pass_game.js
+
+    const preference = new URLSearchParams(window.location.search).get("preference") || 'all';
+    let currentRound = 1;
+    const maxRounds = 25;
+    let choices = {
+        pass: [],
+        smash: [],
+        ultraSmash: []
+    };
+
+    // Fonction pour charger un personnage aléatoire en fonction de la préférence
+    function loadCharacter() {
+        if (currentRound > maxRounds) {
+            saveResults();
+            window.location.href = "smash_or_pass_results.html";
+            return;
+        }
+
+        fetch(`/get-character?preference=${encodeURIComponent(preference)}`)
+            .then(response => response.json())
+            .then(character => {
+                if (character.error) { // Vérifie si la réponse contient une erreur
+                    console.error("Erreur du serveur :", character.error);
+                    alert("Erreur lors du chargement du personnage. Veuillez réessayer.");
+                    return;
+                }
+                document.getElementById("sop-character-image").src = character.image_url || "https://via.placeholder.com/700x900";
+                document.getElementById("sop-character-image").alt = character.name || "Character Image";
+                document.getElementById("sop-character-title").textContent = character.name || "Nom du personnage non disponible";
+                document.getElementById("sop-character-image").dataset.id = character.id || "";
+            })
+            .catch(error => {
+                console.error("Erreur lors du chargement du personnage :", error);
+                alert("Erreur lors du chargement du personnage. Veuillez réessayer.");
+            });
+    }
+
+    // Fonction pour enregistrer le choix de l'utilisateur
+    function recordChoice(choiceType) {
+        const characterId = document.getElementById("sop-character-image").dataset.id;
+        const characterName = document.getElementById("sop-character-title").textContent;
+        const characterImage = document.getElementById("sop-character-image").src;
+
+        if (!characterId) {
+            alert("Erreur: Aucun personnage sélectionné.");
+            return;
+        }
+
+        choices[choiceType].push({
+            id: characterId,
+            name: characterName,
+            image_url: characterImage
+        });
+        currentRound++;
+        loadCharacter();
+    }
+
+    // Enregistrer les résultats sur le serveur
+    function saveResults() {
+        fetch("/save-smash-pass-results", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(choices)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Erreur lors de l'enregistrement des résultats.");
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Résultats enregistrés avec succès :", data);
+            window.location.href = "smash_or_pass_results.html"; // Redirection après succès
+        });
+    }
+
+    // Ajouter des écouteurs d'événements aux boutons
+    function addEventListeners() {
+        const passBtn = document.querySelector('.sop-pass-btn');
+        const smashBtn = document.querySelector('.sop-smash-btn');
+        const ultraSmashBtn = document.querySelector('.sop-ultra-smash-btn');
+
+        if (passBtn) {
+            passBtn.addEventListener('click', () => recordChoice('pass'));
+        }
+
+        if (smashBtn) {
+            smashBtn.addEventListener('click', () => recordChoice('smash'));
+        }
+
+        if (ultraSmashBtn) {
+            ultraSmashBtn.addEventListener('click', () => recordChoice('ultraSmash'));
+        }
+    }
+
+    // Charger le premier personnage et ajouter les écouteurs lors du démarrage du jeu
+    document.addEventListener("DOMContentLoaded", () => {
+        addEventListeners();
+        loadCharacter();
+    });
+  </script>
 </body>
 </html>

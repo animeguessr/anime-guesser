@@ -3,9 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <title>Smash or Pass - Sélection du genre</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Lien vers Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Lien vers Bootstrap (optionnel, si vous souhaitez l'utiliser) -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Styles personnalisés -->
+    <style>
+        /* Style global */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle, #0f0f0f, #050505);
+            color: white;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Arrière-plan animé */
+        .background-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px,
+                transparent 50px
+            ),
+            repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px,
+                transparent 50px
+            );
+            z-index: 0;
+            animation: gridAnimation 10s linear infinite;
+        }
+
+        @keyframes gridAnimation {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(-50px, -50px);
+            }
+        }
+
+        /* Conteneur de sélection */
+        .select-container {
+            position: relative;
+            z-index: 1;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 40px 60px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        /* Titre */
+        .select-container h1 {
+            font-size: 3em;
+            margin-bottom: 40px;
+            color: #ffffff;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Groupe de boutons */
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Boutons de genre */
+        .gender-button {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .gender-button.male {
+            background: linear-gradient(135deg, #4444ff, #8888ff);
+        }
+
+        .gender-button.female {
+            background: linear-gradient(135deg, #ff44aa, #ff88cc);
+        }
+
+        .gender-button.all {
+            background: linear-gradient(135deg, #ff8844, #ffcc88); /* Changement de couleur pour éviter le vert */
+        }
+
+        .gender-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Responsivité */
+        @media (max-width: 768px) {
+            .select-container h1 {
+                font-size: 2.5em;
+            }
+
+            .gender-button {
+                font-size: 1.3em;
+                padding: 18px 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .select-container h1 {
+                font-size: 2em;
+            }
+
+            .gender-button {
+                font-size: 1.1em;
+                padding: 15px 30px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="background-grid"></div>
     <div class="select-container">
         <h1>Choisissez votre préférence</h1>
         <div class="button-group">
@@ -14,9 +151,17 @@
             <button class="gender-button all" onclick="startGame('tout')">Tout</button>
         </div>
     </div>
+    
     <script>
         function startGame(preference) {
-            window.location.href = `smash_or_pass_game.html?preference=${preference}`;
+            // Valider la préférence sélectionnée
+            const validPreferences = ['homme', 'femme', 'tout'];
+            if (!validPreferences.includes(preference)) {
+                alert('Préférence invalide sélectionnée.');
+                return;
+            }
+            // Redirection vers la page du jeu avec la préférence sélectionnée
+            window.location.href = `smash_or_pass_game.html?preference=${encodeURIComponent(preference)}`;
         }
     </script>
 </body>
