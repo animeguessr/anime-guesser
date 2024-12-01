@@ -379,6 +379,61 @@ app.get('/current-anime-answer', (req, res) => {
     }
 });
 
+app.get('/4image', (req, res) => {
+    res.sendFile(path.join(__dirname, '4image.html'));
+});
+
+app.get('/get-images-data', (req, res) => {
+    const imagesDataPath = path.join(__dirname, 'image', 'images_data.json');
+    if (fs.existsSync(imagesDataPath)) {
+        const imagesData = JSON.parse(fs.readFileSync(imagesDataPath, 'utf-8'));
+        res.json(imagesData);
+    } else {
+        res.status(500).send({ error: 'Le fichier images_data.json est introuvable.' });
+    }
+});
+
+app.get('/get-image', (req, res) => {
+    let imagePath = req.query.path;
+    if (imagePath) {
+        // Décoder le composant URI
+        imagePath = decodeURIComponent(imagePath);
+
+        // Définir le répertoire de base autorisé
+        const baseDir = path.join(__dirname, 'image');
+
+        // Normaliser le chemin pour éviter les attaques de type "path traversal"
+        let normalizedPath = path.normalize(imagePath);
+
+        // Vérifier si le chemin est absolu
+        if (path.isAbsolute(normalizedPath)) {
+            // Vérifier que le chemin commence par le répertoire de base autorisé
+            if (!normalizedPath.startsWith(baseDir)) {
+                return res.status(403).send({ error: 'Accès refusé.' });
+            }
+        } else {
+            // Si le chemin est relatif, le résoudre par rapport au répertoire de base
+            normalizedPath = path.join(baseDir, normalizedPath);
+        }
+
+        // Vérifier que le chemin final est toujours dans le répertoire de base
+        if (!normalizedPath.startsWith(baseDir)) {
+            return res.status(403).send({ error: 'Accès refusé.' });
+        }
+
+        // Vérifier si le fichier existe
+        if (fs.existsSync(normalizedPath)) {
+            res.sendFile(normalizedPath);
+        } else {
+            res.status(404).send({ error: 'Image introuvable.' });
+        }
+    } else {
+        res.status(400).send({ error: 'Aucun chemin fourni.' });
+    }
+});
+
+
+
 // Démarrage du serveur
 const port = 3000;
 app.listen(port, () => {
