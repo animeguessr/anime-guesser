@@ -2,10 +2,161 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anime Guesser - Accueil</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Importation des polices depuis Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0f0f0f;
+            --secondary-color: #ff6b81;
+            --accent-color: #22d1a1;
+            --background-color: #121212;
+            --card-bg: #2b2b2b;
+            --text-color-light: #e4e4e4;
+            --border-default: #444;  /* Bordure de base */
+            --border-game1: #ff6b81;  /* Bordure jeu 1 (couleur rosée) */
+            --border-game2: #22d1a1;  /* Bordure jeu 2 (couleur turquoise) */
+            --border-game3: #ffcc00;  /* Bordure jeu 3 (couleur jaune) */
+            --border-game4: #007bff;  /* Bordure jeu 4 (couleur bleue) */
+            --border-game5: #ff6347;  /* Bordure jeu 5 (couleur tomate) */
+            --font-primary: 'Poppins', sans-serif;
+            --font-secondary: 'Montserrat', sans-serif;
+        }
+
+        /* Global Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-primary);
+            background-color: var(--background-color);
+            color: var(--text-color-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1, h2 {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-secondary);
+            font-weight: 700;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            border-bottom: 2px solid var(--primary-color);
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 0;  /* Élimine l’espace en haut de la page */
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            font-size: 1.2rem;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        /* Game Selection */
+        .game-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 25px;
+            padding: 20px;
+            max-width: 1200px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Game Card Styles */
+        .game-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: 3px solid var(--border-default);  /* Bordure par défaut */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            height: 250px;
+            overflow: hidden;
+        }
+
+        /* Bordures spécifiques pour chaque carte */
+        .game-card:nth-child(1) {
+            border-color: var(--border-game1);  /* Bordure rosée pour le jeu 1 */
+        }
+        .game-card:nth-child(2) {
+            border-color: var(--border-game2);  /* Bordure turquoise pour le jeu 2 */
+        }
+        .game-card:nth-child(3) {
+            border-color: var(--border-game3);  /* Bordure jaune pour le jeu 3 */
+        }
+        .game-card:nth-child(4) {
+            border-color: var(--border-game4);  /* Bordure bleue pour le jeu 4 */
+        }
+        .game-card:nth-child(5) {
+            border-color: var(--border-game5);  /* Bordure tomate pour le jeu 5 */
+        }
+
+        .game-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-card h2 {
+            font-size: 1.4rem;
+            color: var(--text-color-light);
+            margin-bottom: 10px;
+        }
+
+        .game-card p {
+            font-size: 1rem;
+            color: var(--text-color-light);
+            opacity: 0.8;
+            margin-top: 15px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .header h2 {
+                font-size: 1.1rem;
+            }
+
+            .game-selection {
+                padding: 20px 10px;
+            }
+
+            .game-card {
+                height: auto;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- En-tête de la page -->
@@ -18,18 +169,23 @@
     <div class="game-selection">
         <div class="game-card" onclick="window.location.href='game.html'">
             <h2>Deviner l'animé à partir d'une image floue</h2>
+            <p>Un défi d'image floue pour tester votre connaissance des animés !</p>
         </div>
         <div class="game-card" onclick="window.location.href='smash_or_pass_select.html'">
-           <h2>Smash or Pass</h2>
+            <h2>Smash or Pass</h2>
+            <p>Faites vos choix parmi les personnages d'animés populaires !</p>
         </div>
         <div class="game-card" onclick="window.location.href='devine.html'">
-           <h2>Devine le personnage</h2>
+            <h2>Devine le personnage</h2>
+            <p>Identifiez le personnage à partir de descriptions et d'indices visuels !</p>
         </div>
         <div class="game-card" onclick="window.location.href='game2.html'">
-            <h2>Deviner d ou viens l oppening</h2>
+            <h2>Deviner d'où vient l'opening</h2>
+            <p>Écoutez l'opening et devinez l'animé d'origine !</p>
         </div>
-        <div class="game-card coming-soon">
-            <h2>Coming Soon</h2>
+        <div class="game-card" onclick="window.location.href='4game.html'">
+            <h2>Devine l'animé avec 4 images</h2>
+            <p>Associez quatre images pour deviner l'animé correspondant !</p>
         </div>
     </div>
 </body>
