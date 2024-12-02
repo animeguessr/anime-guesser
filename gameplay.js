@@ -1,7 +1,7 @@
 $(document).ready(function () {
     const levelNameElement = $('#level-name');
     const urlParams = new URLSearchParams(window.location.search);
-    const level = urlParams.get('level') || 'very_easy';
+    let level = urlParams.get('level') || 'very_easy'; // Utilisation de 'let' au lieu de 'const'
 
     // Niveaux de difficulté
     const levelNames = {
@@ -13,6 +13,22 @@ $(document).ready(function () {
     };
     levelNameElement.text(levelNames[level]);
 
+    // Paramètres du système de points
+    const difficultyPoints = {
+        'very_easy': 5,
+        'easy': 10,
+        'normal': 20,
+        'hard': 30,
+        'impossible': 50
+    };
+
+    const maxTime = 30; // Temps maximum en secondes pour un bonus complet
+    const timeBonusPerSecond = 1; // Bonus par seconde restante
+
+    const hintPenalty = 5; // Pénalité par utilisation d'un indice (déflouter)
+    const skipPenalty = 10; // Pénalité si le joueur choisit de passer
+    const streakBonus = 10; // Bonus pour chaque bonne réponse consécutive au-delà de 3
+
     // Variables du jeu
     const animeImage = $('#anime-image');
     const resultMessage = $('#result-message');
@@ -23,6 +39,13 @@ $(document).ready(function () {
     const livesContainer = $('#lives-container');
     const scoreElement = $('#score');
     const roundNumberElement = $('#round-number');
+    const streakCountElement = $('#streak-count');
+    const endGameModal = $('#end-game-modal');
+    const finalScoreElement = $('#final-score');
+    const roundsPlayedElement = $('#rounds-played');
+    const totalRoundsElement = $('#total-rounds');
+    const restartButton = $('#restart-button');
+    const menuButton = $('#menu-button');
     let roundStartTime = 0;
     let currentAnime = null;
 
@@ -30,9 +53,11 @@ $(document).ready(function () {
     const maxBlurValue = 60;
     const blurStep = 10;
     let defloutageCount = 0;
+    let totalHintsUsed = 0;
     let lives = 3;
     let score = 0;
     let round = 0;
+    let streak = 0;
     const maxRounds = 10;
     let gameOver = false;
     let cooldown = false; // Variable pour gérer le verrouillage après une bonne réponse
@@ -45,19 +70,24 @@ $(document).ready(function () {
         lives = 3;
         blurValue = maxBlurValue;
         defloutageCount = 0;
+        totalHintsUsed = 0;
+        streak = 0;
         cooldown = false;
-        $('#end-game-modal').hide();
+        endGameModal.hide();
         displayLives();
         scoreElement.text(score);
+        streakCountElement.text(streak);
         loadNewAnime();
     }
 
     // Afficher les vies
     function displayLives() {
         livesContainer.empty();
+        let livesHtml = '';
         for (let i = 0; i < lives; i++) {
-            livesContainer.append('<img src="https://cdn.iconscout.com/icon/free/png-256/heart-1767836-1502418.png" class="life-icon" alt="Life">');
+            livesHtml += '<img src="https://cdn.iconscout.com/icon/free/png-256/heart-1767836-1502418.png" class="life-icon" alt="Life">';
         }
+        livesContainer.append(livesHtml);
     }
 
     // Afficher un message temporaire
@@ -99,6 +129,9 @@ $(document).ready(function () {
         hideResultMessage();
         answerInput.val('');
         answerInput.data('titles', []);
+        streakCountElement.text(streak);
+
+        roundStartTime = Date.now(); // Démarrer le timer
 
         fetch('/anime-images')
             .then(response => {
@@ -118,10 +151,10 @@ $(document).ready(function () {
     // Afficher le popup de fin de jeu
     function showEndGamePopup() {
         gameOver = true;
-        $('#final-score').text(score);
-        $('#rounds-played').text(round);
-        $('#total-rounds').text(maxRounds);
-        $('#end-game-modal').show();
+        finalScoreElement.text(score);
+        roundsPlayedElement.text(round);
+        totalRoundsElement.text(maxRounds);
+        endGameModal.show();
     }
 
     // Autocomplétion
@@ -156,6 +189,9 @@ $(document).ready(function () {
         const userAnswer = answerInput.val().trim();
         if (!userAnswer) return;
 
+        const roundEndTime = Date.now();
+        const timeTaken = Math.floor((roundEndTime - roundStartTime) / 1000); // Temps pris en secondes
+
         fetch('/check-answer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -165,12 +201,36 @@ $(document).ready(function () {
             .then(data => {
                 if (data.correct) {
                     cooldown = true; // Activer le cooldown
-                    const pointsEarned = Math.max(10 - Math.floor((Date.now() - roundStartTime) / 1000), 1); // Exemple de calcul de points
+
+                    // Calcul des points
+                    let pointsEarned = difficultyPoints[level];
+
+                    // Bonus de temps
+                    const timeBonus = Math.max(maxTime - timeTaken, 0) * timeBonusPerSecond;
+                    pointsEarned += timeBonus;
+
+                    // Pénalité pour les indices utilisés
+                    const hintPenaltyTotal = defloutageCount * hintPenalty;
+                    pointsEarned = Math.max(pointsEarned - hintPenaltyTotal, 1); // Assurer au moins 1 point
+
+                    // Bonus de streak
+                    streak++;
+                    if (streak > 3) {
+                        pointsEarned += streakBonus;
+                        showResultMessage(`Bonne réponse ! Combo de ${streak} bonnes réponses ! Vous gagnez ${pointsEarned} points.`, '#2ecc71');
+                    } else {
+                        showResultMessage(`Bonne réponse ! Vous gagnez ${pointsEarned} points.`, '#2ecc71');
+                    }
+
+                    streakCountElement.text(streak);
                     score += pointsEarned;
                     scoreElement.text(score);
-                    showResultMessage(`Bonne réponse ! Vous gagnez ${pointsEarned} points.`, '#2ecc71');
                     setTimeout(loadNewAnime, 3000);
                 } else {
+                    // Réinitialiser le streak en cas de mauvaise réponse
+                    streak = 0;
+                    streakCountElement.text(streak);
+
                     lives--;
                     displayLives();
                     if (lives > 0) {
@@ -180,6 +240,10 @@ $(document).ready(function () {
                         setTimeout(showEndGamePopup, 3000);
                     }
                 }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la vérification de la réponse :', error.message);
+                showResultMessage('Erreur lors de la vérification. Veuillez réessayer.', '#e74c3c');
             });
     });
 
@@ -188,6 +252,7 @@ $(document).ready(function () {
         if (blurValue > 0) {
             blurValue -= blurStep;
             defloutageCount++;
+            totalHintsUsed++;
             animeImage.css('filter', `blur(${blurValue}px)`);
         }
     });
@@ -197,19 +262,30 @@ $(document).ready(function () {
         if (gameOver || cooldown) return;
 
         cooldown = true; // Activer le cooldown
+        streak = 0; // Réinitialiser le streak
+        streakCountElement.text(streak);
+
+        score = Math.max(score - skipPenalty, 0); // Appliquer la pénalité et assurer que le score ne soit pas négatif
+        scoreElement.text(score);
+
         fetch('/current-anime-answer')
             .then(response => response.json())
             .then(data => {
-                showResultMessage(`La réponse était : ${data.correctAnswer}`, '#e67e22');
+                showResultMessage(`La réponse était : ${data.correctAnswer}. Vous perdez ${skipPenalty} points.`, '#e67e22');
+                setTimeout(loadNewAnime, 3000);
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération de la réponse :', error.message);
+                showResultMessage('Erreur lors de la récupération de la réponse. Veuillez réessayer.', '#e74c3c');
                 setTimeout(loadNewAnime, 3000);
             });
     });
 
     // Bouton "Recommencer"
-    $('#restart-button').on('click', resetGame);
+    restartButton.on('click', resetGame);
 
     // Bouton "Menu"
-    $('#menu-button').on('click', () => {
+    menuButton.on('click', () => {
         window.location.href = 'index.html';
     });
 

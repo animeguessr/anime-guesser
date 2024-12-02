@@ -317,13 +317,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const response = await fetch(`/anime?difficulty=${difficulty}`);
     const animes = await response.json();
 
-    // Créer une liste d'objets avec alt uniquement
-    const animeData = animes.map(anime => {
-        return {
-            alt: anime.alt || anime.nom, // Utiliser nom si alt est indisponible
-            openingpath: anime.openingpath
-        };
-    });
+    // Créer une liste d'objets avec 'id' et 'alt' uniquement
+    const animeData = animes.map(anime => ({
+        id: anime.id,
+        alt: anime.alt || anime.nom // Utiliser 'nom' si 'alt' est indisponible
+    }));
 
     let currentAnime = null;
     let index = 0;
@@ -342,20 +340,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     const playButton = document.getElementById('playPauseButton');
     const fullscreenButton = document.getElementById('fullscreenButton');
     const removeBlurButton = document.getElementById('removeBlurButton');
+    const resultElement = document.getElementById('result');
+    const animeInput = document.getElementById('animeInput');
+    const endPopup = document.getElementById('endPopup');
+    const finalScoreElement = document.getElementById('finalScore');
 
     // Sélection des boutons "Valider" et "Je ne sais pas" pour le cooldown
     const validateButton = document.querySelector('.buttons button:nth-child(1)');
     const skipButton = document.querySelector('.buttons button:nth-child(2)');
 
+    // Précharger les médias pour éviter les latences
+    const preloadedMedia = {};
+
     function loadAnime() {
-        if (index < animes.length) {
-            currentAnime = animes[index];
+        if (index < animeData.length) {
+            currentAnime = animeData[index];
 
-            // Construire le chemin relatif
-            let relativePath = currentAnime.openingpath.replace(/^.*[\\/](opening[\\/])/i, '');
-            relativePath = relativePath.replace(/\\/g, '/');
+            const mediaPath = `/media/${currentAnime.id}`;
 
-            const mediaPath = `/opening/${relativePath}`;
+            // Précharger le média si ce n'est pas déjà fait
+            if (!preloadedMedia[mediaPath]) {
+                preloadedMedia[mediaPath] = new Audio(mediaPath);
+            }
 
             audioElement.src = mediaPath;
             videoElement.src = mediaPath;
@@ -367,12 +373,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             videoElement.style.filter = 'blur(10px)';
 
             // Réinitialiser les variables
-            lives = 3; // Réinitialiser les vies pour le nouveau tour
+            lives = initialLives;
             startTime = Date.now();
             usedUnlockVideo = false;
+            listenedTime = 0;
 
             // Réinitialiser et démarrer l'audio
-            audioElement.currentTime = 0; // Réinitialise le temps de l'audio
+            audioElement.currentTime = 0;
             audioElement.play();
 
             // Réinitialiser la vidéo
@@ -397,32 +404,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Fonction pour calculer la similarité (distance de Levenshtein)
     function levenshteinDistance(a, b) {
-        const matrix = [];
+        const an = a.length;
+        const bn = b.length;
+        const matrix = Array.from({ length: bn + 1 }, () => []);
 
-        // Initialisation
-        for (let i = 0; i <= b.length; i++) {
-            matrix[i] = [i];
-        }
-        for (let j = 0; j <= a.length; j++) {
-            matrix[0][j] = j;
-        }
+        for (let i = 0; i <= bn; i++) matrix[i][0] = i;
+        for (let j = 0; j <= an; j++) matrix[0][j] = j;
 
-        // Calcul
-        for (let i = 1; i <= b.length; i++) {
-            for (let j = 1; j <= a.length; j++) {
+        for (let i = 1; i <= bn; i++) {
+            for (let j = 1; j <= an; j++) {
                 if (b.charAt(i - 1) === a.charAt(j - 1)) {
                     matrix[i][j] = matrix[i - 1][j - 1];
                 } else {
                     matrix[i][j] = Math.min(
-                        matrix[i - 1][j - 1] + 1, // Substitution
-                        matrix[i][j - 1] + 1,     // Insertion
-                        matrix[i - 1][j] + 1      // Suppression
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
                     );
                 }
             }
         }
-
-        return matrix[b.length][a.length];
+        return matrix[bn][an];
     }
 
     // Fonction pour calculer le score
@@ -467,13 +469,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Fonction pour valider la réponse
     async function submitAnswer() {
+        if (validateButton.disabled) return;
+
         // Démarrer le cooldown pour le bouton "Valider"
         validateButton.disabled = true;
         setTimeout(() => {
             validateButton.disabled = false;
         }, 3000);
 
-        const userInput = document.getElementById('animeInput').value.trim();
+        const userInput = animeInput.value.trim();
 
         const timeTaken = (Date.now() - startTime) / 1000; // Temps en secondes
 
@@ -494,8 +498,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const similarityThreshold = 0.6; // Ajustez ce seuil selon vos préférences (entre 0 et 1)
         const isValid = similarity >= similarityThreshold;
-
-        const resultElement = document.getElementById('result');
 
         if (isValid) {
             const roundScore = calculateScore(timeTaken, listenedTime);
@@ -520,9 +522,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         round++;
         if (round < totalRounds) {
             index++;
-            document.getElementById('result').textContent = '';
-            document.getElementById('animeInput').value = '';
-            lives = 3; // Réinitialiser les vies pour le nouveau tour
+            resultElement.textContent = '';
+            animeInput.value = '';
+            lives = initialLives; // Réinitialiser les vies pour le nouveau tour
             loadAnime();
         } else {
             showEndPopup();
@@ -533,13 +535,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Fonction pour passer à l'anime suivant sans valider
     function skipAnswer() {
+        if (skipButton.disabled) return;
+
         // Démarrer le cooldown pour le bouton "Je ne sais pas"
         skipButton.disabled = true;
         setTimeout(() => {
             skipButton.disabled = false;
         }, 3000);
 
-        const resultElement = document.getElementById('result');
         resultElement.textContent = `Vous n'avez pas trouvé la réponse. L'anime était : ${displayAnswer()}.`;
         setTimeout(nextRound, 3000); // Attend 3 secondes avant de passer au round suivant
     }
@@ -549,7 +552,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Fonction pour débloquer la vidéo
     function unlockVideo() {
         audioElement.style.display = 'none';
-        document.querySelector('.video-player').style.display = 'flex'; // Affiche la div parent
+        const videoPlayerDiv = document.querySelector('.video-player');
+        videoPlayerDiv.style.display = 'flex'; // Affiche la div parent
         audioElement.pause();
         videoElement.currentTime = 0; // Réinitialise le temps de la vidéo
         videoElement.play(); // Démarre la lecture vidéo
@@ -605,8 +609,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const normalizedVal = normalizeString(val);
             const suggestionsAdded = new Set(); // Pour éviter les doublons
+            let suggestionCount = 0;
 
-            for (let i = 0; i < animeData.length; i++) {
+            for (let i = 0; i < animeData.length && suggestionCount < 10; i++) {
                 const alt = animeData[i].alt;
 
                 const normalizedAlt = normalizeString(alt);
@@ -616,11 +621,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // Vérifier si la suggestion a déjà été ajoutée
                     if (!suggestionsAdded.has(displayText)) {
                         suggestionsAdded.add(displayText);
+                        suggestionCount++;
 
                         let item = document.createElement("div");
-                        item.innerHTML = "<strong>" + alt.substr(0, val.length) + "</strong>";
-                        item.innerHTML += alt.substr(val.length);
-                        item.innerHTML += "<input type='hidden' value='" + alt + "'>";
+                        item.innerHTML = "<strong>" + displayText.substr(0, val.length) + "</strong>";
+                        item.innerHTML += displayText.substr(val.length);
+                        item.innerHTML += "<input type='hidden' value='" + displayText + "'>";
 
                         item.addEventListener("click", function() {
                             input.value = this.getElementsByTagName("input")[0].value;
@@ -677,33 +683,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    autocomplete(document.getElementById("animeInput"), animeData);
+    autocomplete(animeInput, animeData);
 
     // Fonctions pour la pop-up de fin
     function showEndPopup() {
-        const endPopup = document.getElementById('endPopup');
-        const finalScoreElement = document.getElementById('finalScore');
         finalScoreElement.textContent = `Votre score final est de ${score} points !`;
         endPopup.style.display = 'flex';
         document.body.classList.add('popup-active');
     }
 
-    function restartQuiz() {
+    window.restartQuiz = function() {
         // Réinitialiser les variables du quiz
         index = 0;
         round = 0;
         score = 0;
-        lives = 3;
-        document.getElementById('endPopup').style.display = 'none';
+        lives = initialLives;
+        endPopup.style.display = 'none';
         document.body.classList.remove('popup-active');
-        document.getElementById('result').textContent = '';
-        document.getElementById('animeInput').value = '';
+        resultElement.textContent = '';
+        animeInput.value = '';
         loadAnime();
-    }
+    };
 
-    function goToMenu() {
+    window.goToMenu = function() {
         window.location.href = 'index.html';
-    }
+    };
 
 });
 </script>

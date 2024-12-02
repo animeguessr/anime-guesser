@@ -2,173 +2,158 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Devine le Personnage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Inclure les polices Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Feuille de style CSS -->
     <style>
         /* Style global */
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             min-height: 100vh;
             overflow: hidden;
-            transition: background 0.5s ease; /* Transition fluide pour le changement de fond */
+            transition: background 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #121212;
+            color: #ffffff;
         }
-
-        .devine-container {
-            background: rgba(0, 0, 0, 0.7);
+        .container {
+            background: rgba(0, 0, 0, 0.8);
             border-radius: 15px;
             padding: 20px;
-            max-width: 800px;
+            max-width: 600px;
             width: 90%;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-            position: relative; /* Pour positionner l'écran de fin de jeu */
+            position: relative;
         }
-
-        .devine-header {
+        .header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
             font-size: 1.2rem;
             font-weight: bold;
-            color: #fff;
         }
-
-        .devine-character-container {
+        .character-container {
             position: relative;
-            height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.8);
+            height: 300px;
+            background: #1f1f1f;
             border-radius: 15px;
             overflow: hidden;
             margin-bottom: 20px;
         }
-
-        .devine-character-image {
+        .character-image {
             max-height: 100%;
             max-width: 100%;
             object-fit: contain;
         }
-
-        .devine-options-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
             gap: 15px;
-            padding: 20px;
+            justify-content: center;
         }
-
-        .devine-option-button {
-            background: linear-gradient(135deg, #4e4376, #2b2b2b);
+        .option-button {
+            background: #282828;
             color: #fff;
             border: none;
             padding: 15px;
             font-size: 1rem;
             border-radius: 10px;
             cursor: pointer;
-            font-weight: bold;
+            flex: 1 1 calc(50% - 30px);
+            max-width: calc(50% - 30px);
             transition: all 0.3s ease;
         }
-
-        .devine-option-button:hover {
+        .option-button:hover {
             transform: scale(1.05);
+            background: #3a3a3a;
         }
-
         /* Styles pour les réponses correctes et incorrectes */
         .correct {
             background: #28a745 !important;
         }
-
         .wrong {
             background: #dc3545 !important;
         }
-
         /* Écran de fin de jeu */
-        .devine-game-over-screen {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
             color: #fff;
             padding: 30px;
             border-radius: 15px;
             text-align: center;
-            display: none; /* Caché par défaut */
+            display: none;
             z-index: 1000;
         }
-
-        .devine-game-over-screen.active {
-            display: block;
+        .game-over-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-
-        .devine-game-over-screen button {
+        .game-over-screen h2 {
+            margin-bottom: 20px;
+        }
+        .game-over-screen button {
             margin: 10px;
-            padding: 10px 20px;
+            padding: 12px 25px;
             font-size: 1rem;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             transition: background 0.3s ease;
         }
-
-        #devine-restart-button {
+        #restart-button {
             background: #28a745;
             color: #fff;
         }
-
-        #devine-restart-button:hover {
+        #restart-button:hover {
             background: #218838;
         }
-
-        #devine-menu-button {
+        #menu-button {
             background: #ffc107;
             color: #000;
         }
-
-        #devine-menu-button:hover {
+        #menu-button:hover {
             background: #e0a800;
         }
     </style>
 </head>
 <body>
-    <div class="devine-container">
+    <div class="container">
         <!-- En-tête -->
-        <div class="devine-header">
-            <div>Vies : <span id="devine-lives">3</span></div>
-            <div>Nombre de personnage trouvé : <span id="devine-score">0</span></div>
+        <div class="header">
+            <div>Vies : <span id="lives">3</span></div>
+            <div>Personnages trouvés : <span id="score">0</span></div>
         </div>
-
         <!-- Conteneur de l'image -->
-        <div class="devine-character-container">
-            <img id="devine-character-image" src="" alt="Personnage" class="devine-character-image" />
+        <div class="character-container">
+            <img id="character-image" src="" alt="Personnage" class="character-image" />
         </div>
-
         <!-- Options -->
-        <div class="devine-options-container">
-            <button class="devine-option-button" id="option-1">Option 1</button>
-            <button class="devine-option-button" id="option-2">Option 2</button>
-            <button class="devine-option-button" id="option-3">Option 3</button>
-            <button class="devine-option-button" id="option-4">Option 4</button>
+        <div class="options-container" id="options-container">
+            <!-- Les boutons d'options seront générés dynamiquement -->
         </div>
-
         <!-- Écran de fin de jeu -->
-        <div class="devine-game-over-screen" id="devine-game-over-screen">
+        <div class="game-over-screen" id="game-over-screen">
             <h2>Jeu Terminé</h2>
-            <p>Votre Score : <span id="devine-final-score">0</span></p>
-            <button id="devine-restart-button">Recommencer</button>
-            <button id="devine-menu-button">Menu Principal</button>
+            <p>Votre Score : <span id="final-score">0</span></p>
+            <button id="restart-button">Recommencer</button>
+            <button id="menu-button">Menu Principal</button>
         </div>
     </div>
-
     <!-- Bibliothèque Color Thief -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
-    
+    <!-- Script du jeu -->
     <script>
         // Variables de jeu
         let lives = 3;
@@ -176,14 +161,14 @@
         let cooldown = false; // Gestion du cooldown global
 
         // Références aux éléments du DOM
-        const characterImage = document.getElementById('devine-character-image');
-        const optionsContainer = document.querySelector('.devine-options-container');
-        const livesDisplay = document.getElementById('devine-lives');
-        const scoreDisplay = document.getElementById('devine-score');
-        const gameOverScreen = document.getElementById('devine-game-over-screen');
-        const finalScoreDisplay = document.getElementById('devine-final-score');
-        const restartButton = document.getElementById('devine-restart-button');
-        const menuButton = document.getElementById('devine-menu-button');
+        const characterImage = document.getElementById('character-image');
+        const optionsContainer = document.getElementById('options-container');
+        const livesDisplay = document.getElementById('lives');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+        const menuButton = document.getElementById('menu-button');
         const body = document.body;
 
         // Fonction pour obtenir une couleur contrastante (noir ou blanc) en fonction de la couleur donnée
@@ -218,7 +203,7 @@
                 const textColor = getContrastingColor(dominantColor);
 
                 // Sélectionner tous les boutons d'option
-                const buttons = document.querySelectorAll('.devine-option-button');
+                const buttons = document.querySelectorAll('.option-button');
                 buttons.forEach(button => {
                     button.style.background = `linear-gradient(135deg, rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]}), ${darkerColor})`;
                     button.style.color = textColor;
@@ -249,21 +234,24 @@
                 // Vider les options précédentes
                 optionsContainer.innerHTML = '';
 
+                // Mélanger les options
+                const shuffledOptions = shuffleArray(data.options);
+
                 // Ajouter les nouvelles options
-                data.options.forEach(option => {
+                shuffledOptions.forEach(option => {
                     const button = document.createElement('button');
-                    button.classList.add('devine-option-button');
+                    button.classList.add('option-button');
                     button.innerHTML = `
-                        <span class="devine-character-name">${option.name}</span>
+                        <span class="character-name">${option.name}</span>
                         <br>
-                        <span class="devine-anime-title">${option.anime}</span>
+                        <span class="anime-title">${option.anime}</span>
                     `;
 
                     // Ajouter les événements de clic
                     if (option.id === mainCharacter.id) {
-                        button.addEventListener('click', () => handleCorrectAnswer(button));
+                        button.addEventListener('click', () => handleAnswer(button, true));
                     } else {
-                        button.addEventListener('click', () => handleWrongAnswer(button, mainCharacter.name));
+                        button.addEventListener('click', () => handleAnswer(button, false, mainCharacter));
                     }
 
                     optionsContainer.appendChild(button);
@@ -273,41 +261,48 @@
             }
         }
 
-        // Gestion des bonnes réponses
-        function handleCorrectAnswer(button) {
-            if (cooldown) return; // Bloque les clics multiples
-            activateCooldown(); // Active le cooldown global
+        // Fonction pour mélanger un tableau (Fisher-Yates shuffle)
+        function shuffleArray(array) {
+            let currentIndex = array.length, temporaryValue, randomIndex;
 
-            button.classList.add('correct');
-            score++;
-            scoreDisplay.textContent = score;
+            while (0 !== currentIndex) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
 
-            // Charger le prochain round après un délai
-            setTimeout(() => {
-                deactivateCooldown(); // Désactive le cooldown après le délai
-                loadCharacter();
-            }, 1000);
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+            }
+            return array;
         }
 
-        // Gestion des mauvaises réponses
-        function handleWrongAnswer(button, correctName) {
+        // Gestion des réponses
+        function handleAnswer(button, isCorrect, mainCharacter = null) {
             if (cooldown) return; // Bloque les clics multiples
             activateCooldown(); // Active le cooldown global
 
-            button.classList.add('wrong');
-            lives--;
-            livesDisplay.textContent = lives;
+            if (isCorrect) {
+                button.classList.add('correct');
+                score++;
+                scoreDisplay.textContent = score;
+            } else {
+                button.classList.add('wrong');
+                lives--;
+                livesDisplay.textContent = lives;
 
-            // Mettre en surbrillance la bonne réponse
-            const buttons = optionsContainer.querySelectorAll('.devine-option-button');
-            buttons.forEach(btn => {
-                if (btn.textContent.includes(correctName)) {
-                    btn.classList.add('correct');
-                }
-            });
+                // Mettre en surbrillance la bonne réponse
+                const buttons = optionsContainer.querySelectorAll('.option-button');
+                buttons.forEach(btn => {
+                    if (btn.textContent.includes(mainCharacter.name)) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
 
             if (lives === 0) {
-                endGame();
+                setTimeout(() => {
+                    endGame();
+                }, 1000);
             } else {
                 // Charger le prochain round après un délai
                 setTimeout(() => {
@@ -321,37 +316,24 @@
         function endGame() {
             finalScoreDisplay.textContent = score;
             gameOverScreen.classList.add('active');
-            // Suppression de l'appel à deactivateCooldown() pour empêcher la réactivation des boutons de choix
-            // deactivateCooldown(); 
-            // Les boutons de choix restent désactivés car cooldown reste actif
+            // Désactiver les boutons pour éviter les interactions
+            disableAllButtons();
         }
 
         // Gestion du bouton "Recommencer"
         restartButton.addEventListener('click', () => {
-            // Retirer la vérification de cooldown pour ce bouton
-            activateCooldown(); // Active le cooldown global si nécessaire
-
             lives = 3;
             score = 0;
             livesDisplay.textContent = lives;
             scoreDisplay.textContent = score;
             gameOverScreen.classList.remove('active'); // Cacher l'écran "Jeu Terminé"
-            
-            setTimeout(() => {
-                deactivateCooldown(); // Désactive le cooldown après le délai
-                loadCharacter();
-            }, 1000);
+            deactivateCooldown(); // Désactive le cooldown
+            loadCharacter();
         });
 
         // Retour au menu principal
         menuButton.addEventListener('click', () => {
-            // Retirer la vérification de cooldown pour ce bouton
-            activateCooldown(); // Active le cooldown global si nécessaire
-
-            setTimeout(() => {
-                deactivateCooldown(); // Désactive le cooldown après le délai
-                window.location.href = 'index.html';
-            }, 1000);
+            window.location.href = 'index.html';
         });
 
         // Activer le cooldown global
@@ -366,17 +348,17 @@
             enableAllButtons();
         }
 
-        // Désactiver tous les boutons sauf "Recommencer" et "Menu Principal"
+        // Désactiver tous les boutons
         function disableAllButtons() {
-            const buttons = document.querySelectorAll('button:not(#devine-restart-button):not(#devine-menu-button)');
+            const buttons = document.querySelectorAll('.option-button');
             buttons.forEach(button => {
                 button.disabled = true;
             });
         }
 
-        // Réactiver tous les boutons sauf "Recommencer" et "Menu Principal"
+        // Réactiver tous les boutons
         function enableAllButtons() {
-            const buttons = document.querySelectorAll('button:not(#devine-restart-button):not(#devine-menu-button)');
+            const buttons = document.querySelectorAll('.option-button');
             buttons.forEach(button => {
                 button.disabled = false;
             });

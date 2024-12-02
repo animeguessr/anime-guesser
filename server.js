@@ -3,92 +3,73 @@ const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
 const session = require('express-session');
-const levenshtein = require('fast-levenshtein');
-const unaccent = require('unaccent');
 const crypto = require('crypto');
+const unaccent = require('unaccent'); // Assurez-vous que ce module est installé
 
 const app = express();
 
 // Chemins des répertoires d'images
 const imageDirectory = path.join(__dirname, 'caractere');
 const openingDirectory = path.join(__dirname, 'opening', 'opening');
-const imagesDirectory = path.join(__dirname, 'images');  // Chemin corrigé pour le répertoire des images
+const imagesDirectory = path.join(__dirname, 'images');
 
 // Configuration du pool de connexions à la base de données
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'animeguesse',
-    password: '2fG^cFx$#f7N@',
-    port: 5432
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'animeguesse',
+    password: process.env.DB_PASSWORD || '2fG^cFx$#f7N@',
+    port: process.env.DB_PORT || 5432
 });
 
 // Middleware
 app.use(express.json());
 app.use(session({
-    secret: 'votre_cle_secrete',
+    secret: process.env.SESSION_SECRET || 'votre_cle_secrete', // Utilisez une variable d'environnement pour la clé secrète
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Passez à true si vous utilisez HTTPS
 }));
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname));
 app.use('/caractere', express.static(imageDirectory));
 app.use('/images', express.static(imagesDirectory));
 app.use('/opening', express.static(openingDirectory));
 
-
 // Fonctions utilitaires
 function normalizeString(str) {
-    let normalized = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    normalized = normalized.replace(/[^a-z0-9\s]/g, "");
-    normalized = normalized.replace(/\s+/g, " ").trim();
-    normalized = normalized.replace(/^(le|la|les|l|un|une|des)\s+/i, "");
-    return normalized;
+    return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/^(le|la|les|l|un|une|des)\s+/i, "");
 }
 
 function getLevelCriteria(level, modifier = 0) {
-    let baseCriteria = {
-        maxPopularity: 550,
-        types: ['TV'],
-        includeSequels: false,
-        excludeTop: null
+    const criteriaByLevel = {
+        'very_easy': { maxPopularity: 350, types: ['TV'], includeSequels: false },
+        'easy': { maxPopularity: 650, types: ['TV', 'Movie'], includeSequels: false },
+        'normal': { maxPopularity: 900, types: ['TV', 'Movie'], includeSequels: false },
+        'hard': { maxPopularity: 2000, types: ['TV', 'Movie', 'OVA'], includeSequels: true, excludeTop: 400 },
+        'impossible': { maxPopularity: 5000, types: ['Movie', 'OVA', 'ONA', 'Special'], includeSequels: true, excludeTop: 1000 }
     };
-
-    switch (level) {
-        case 'very_easy':
-            baseCriteria = { maxPopularity: 350, types: ['TV'], includeSequels: false };
-            break;
-        case 'easy':
-            baseCriteria = { maxPopularity: 650, types: ['TV', 'Movie'], includeSequels: false };
-            break;
-        case 'normal':
-            baseCriteria = { maxPopularity: 900, types: ['TV', 'Movie'], includeSequels: false };
-            break;
-        case 'hard':
-            baseCriteria = { maxPopularity: 2000, types: ['TV', 'Movie', 'OVA'], includeSequels: true, excludeTop: 400 };
-            break;
-        case 'impossible':
-            baseCriteria = { maxPopularity: 5000, types: ['Movie', 'OVA', 'ONA', 'Special'], includeSequels: true, excludeTop: 1000 };
-            break;
-    }
-
+    const baseCriteria = criteriaByLevel[level] || criteriaByLevel['very_easy'];
     baseCriteria.maxPopularity = Math.min(Math.max(baseCriteria.maxPopularity + modifier, 100), 5000);
     return baseCriteria;
 }
 
-function cryptoRandom() {
-    const buffer = crypto.randomBytes(4);
-    return buffer.readUInt32BE(0) / 0xffffffff;
-}
-
 function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(cryptoRandom() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+    let m = array.length, t, i;
+    while (m) {
+        i = Math.floor(crypto.randomInt(0, m--));
+        t = array[m];
+        array[m] = array[i];
+        array[i] = t;
     }
     return array;
 }
-
 
 // Routes existantes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
@@ -112,7 +93,9 @@ app.get('/anime-images', async (req, res) => {
         const values = [criteria.maxPopularity, criteria.types];
         let paramIndex = 3;
 
-        if (!criteria.includeSequels) conditions.push(`is_sequel = FALSE`);
+        if (!criteria.includeSequels) {
+            conditions.push(`is_sequel = FALSE`);
+        }
         if (criteria.excludeTop) {
             conditions.push(`popularity > $${paramIndex}`);
             values.push(criteria.excludeTop);
@@ -125,15 +108,18 @@ app.get('/anime-images', async (req, res) => {
         }
 
         const query = `SELECT * FROM animes WHERE ${conditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
-        let { rows } = await pool.query(query, values);
+        const { rows } = await pool.query(query, values);
 
         if (rows.length === 0) {
             req.session.usedAnimeIds = [];
             const resetConditions = conditions.filter(cond => !cond.includes('id != ALL'));
             const resetQuery = `SELECT * FROM animes WHERE ${resetConditions.join(' AND ')} ORDER BY RANDOM() LIMIT 1`;
-            const resetResult = await pool.query(resetQuery, values.slice(0, paramIndex - 1));
-            rows = resetResult.rows;
-            if (rows.length === 0) return res.status(404).send('Aucun animé trouvé');
+            const resetValues = values.slice(0, paramIndex - 1);
+            const resetResult = await pool.query(resetQuery, resetValues);
+            if (resetResult.rows.length === 0) {
+                return res.status(404).send('Aucun animé trouvé');
+            }
+            rows.push(resetResult.rows[0]);
         }
 
         const currentAnime = rows[0];
@@ -154,7 +140,7 @@ app.get('/anime-images', async (req, res) => {
             title: currentAnime.title,
             alt_title: currentAnime.alt_title,
             popularity: currentAnime.popularity,
-            image_url: imageUrl  // S'assurer que l'URL de l'image est correcte
+            image_url: imageUrl
         });
     } catch (error) {
         console.error('Erreur lors de la récupération de l\'image :', error);
@@ -168,19 +154,19 @@ app.get('/reset-used-animes', (req, res) => {
 });
 
 app.post('/check-answer', (req, res) => {
-    const userAnswer = normalizeString(req.body.answer.trim());
-    const possibleTitles = req.body.possibleTitles.map(title => normalizeString(title.trim()));
+    const userAnswer = normalizeString(req.body.answer || '');
+    const possibleTitles = (req.body.possibleTitles || []).map(title => normalizeString(title || ''));
     const currentAnime = req.session.currentAnime;
 
     if (!currentAnime) return res.json({ correct: false });
 
     const correctTitles = [
-        normalizeString(currentAnime.title.trim()),
-        normalizeString(currentAnime.alt_title.trim())
+        normalizeString(currentAnime.title || ''),
+        normalizeString(currentAnime.alt_title || '')
     ];
 
     const isSimilar = (a, b) => {
-        const distance = levenshtein.get(a, b);
+        const distance = levenshteinDistance(a, b);
         const maxLength = Math.max(a.length, b.length);
         return (maxLength - distance) / maxLength >= 0.8;
     };
@@ -199,6 +185,31 @@ app.post('/check-answer', (req, res) => {
     }
 });
 
+// Fonction pour calculer la distance de Levenshtein
+function levenshteinDistance(a, b) {
+    const an = a.length;
+    const bn = b.length;
+    const matrix = Array.from({ length: bn + 1 }, () => []);
+
+    for (let i = 0; i <= bn; i++) matrix[i][0] = i;
+    for (let j = 0; j <= an; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= bn; i++) {
+        for (let j = 1; j <= an; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+    return matrix[bn][an];
+}
+
 app.post('/adjust-difficulty', (req, res) => {
     const correct = req.body.correct;
     req.session.difficultyModifier = req.session.difficultyModifier || 0;
@@ -210,27 +221,9 @@ app.get('/anime-suggestions', async (req, res) => {
     const searchQuery = req.query.query.toLowerCase();
     const level = req.session.level || 'very_easy';
 
-    let animeTypes;
-    let excludeSequels = false;
-
-    switch (level) {
-        case 'very_easy':
-            animeTypes = ['TV'];
-            excludeSequels = true;
-            break;
-        case 'easy':
-            animeTypes = ['TV', 'Movie'];
-            break;
-        case 'normal':
-            animeTypes = ['TV', 'Movie', 'OVA'];
-            break;
-        case 'hard':
-        case 'impossible':
-            animeTypes = ['TV', 'Movie', 'OVA', 'ONA', 'Special'];
-            break;
-        default:
-            animeTypes = ['TV'];
-    }
+    const levelCriteria = getLevelCriteria(level);
+    const animeTypes = levelCriteria.types;
+    const excludeSequels = !levelCriteria.includeSequels;
 
     const conditions = [
         `(LOWER(unaccent(title)) LIKE '%' || unaccent($1) || '%' OR LOWER(unaccent(alt_title)) LIKE '%' || unaccent($1) || '%')`,
@@ -238,7 +231,9 @@ app.get('/anime-suggestions', async (req, res) => {
     ];
     const values = [searchQuery, animeTypes];
 
-    if (excludeSequels) conditions.push(`is_sequel = FALSE`);
+    if (excludeSequels) {
+        conditions.push(`is_sequel = FALSE`);
+    }
 
     const query = `SELECT title, alt_title FROM animes WHERE ${conditions.join(' AND ')} LIMIT 10`;
 
@@ -255,18 +250,17 @@ app.get('/get-character', async (req, res) => {
     const preference = (req.query.preference || 'tout').toLowerCase();
     const validPreferences = ['femme', 'homme', 'tout'];
 
-    if (!validPreferences.includes(preference)) return res.status(400).json({ error: 'Préférence de genre invalide' });
+    if (!validPreferences.includes(preference)) {
+        return res.status(400).json({ error: 'Préférence de genre invalide' });
+    }
 
     const conditions = ['image_url IS NOT NULL', "image_url != ''"];
     const values = [];
     let paramIndex = 1;
 
-    if (preference === 'femme') {
+    if (preference === 'femme' || preference === 'homme') {
         conditions.push(`genre = $${paramIndex++}`);
-        values.push('Femme');
-    } else if (preference === 'homme') {
-        conditions.push(`genre = $${paramIndex++}`);
-        values.push('Homme');
+        values.push(preference.charAt(0).toUpperCase() + preference.slice(1));
     } else {
         conditions.push(`genre IN ('Homme', 'Femme')`);
     }
@@ -304,7 +298,7 @@ app.get('/get-results', (req, res) => {
 
 app.get('/get-animes', async (req, res) => {
     try {
-        const result = await pool.query(`SELECT id, title, REPLACE(image_url, 'C:\\Animeguesser\\images\\', '/images/') AS image_url, popularity, score, members FROM animes`);
+        const result = await pool.query(`SELECT id, title, REPLACE(image_url, $1, '/images/') AS image_url, popularity, score, members FROM animes`, [path.join('C:', 'Animeguesser', 'images')]);
         res.json(result.rows);
     } catch (error) {
         console.error('Erreur lors de la récupération des animes :', error);
@@ -313,30 +307,27 @@ app.get('/get-animes', async (req, res) => {
 });
 
 app.get('/get-character-game-data', async (req, res) => {
-    const client = await pool.connect();
     try {
-        const mainCharacterResult = await client.query(`SELECT id, name, anime, genre, image_url FROM caracteres ORDER BY RANDOM() LIMIT 1`);
+        const mainCharacterResult = await pool.query(`SELECT id, name, anime, genre, image_url FROM caracteres ORDER BY RANDOM() LIMIT 1`);
         const mainCharacter = mainCharacterResult.rows[0];
         if (!mainCharacter) return res.status(404).json({ error: 'Aucun personnage principal trouvé.' });
 
         mainCharacter.image_url = `/caractere/${path.basename(mainCharacter.image_url)}`;
 
-        const additionalCharactersResult = await client.query(`SELECT id, name, anime, genre FROM caracteres WHERE id != $1 ORDER BY RANDOM() LIMIT 3`, [mainCharacter.id]);
-        const options = [...additionalCharactersResult.rows, {
+        const additionalCharactersResult = await pool.query(`SELECT id, name, anime, genre FROM caracteres WHERE id != $1 ORDER BY RANDOM() LIMIT 3`, [mainCharacter.id]);
+        const options = shuffleArray([...additionalCharactersResult.rows, {
             id: mainCharacter.id,
             name: mainCharacter.name,
             anime: mainCharacter.anime
-        }];
+        }]);
 
         res.json({
             mainCharacter: mainCharacter,
-            options: shuffleArray(options)
+            options: options
         });
     } catch (error) {
         console.error('Erreur lors de la récupération des données de jeu :', error);
         res.status(500).json({ error: 'Erreur serveur.' });
-    } finally {
-        client.release();
     }
 });
 
@@ -351,8 +342,38 @@ app.get('/anime', async (req, res) => {
             minId = 301; maxId = 600;
         }
 
-        const result = await pool.query(`SELECT * FROM opening WHERE id >= $1 AND id <= $2 ORDER BY RANDOM()`, [minId, maxId]);
+        const result = await pool.query(`SELECT id, alt, nom FROM opening WHERE id >= $1 AND id <= $2 ORDER BY RANDOM()`, [minId, maxId]);
         res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Erreur du serveur');
+    }
+});
+
+const mediaDir = path.join(__dirname, 'opening', 'opening');
+
+app.get('/media/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const result = await pool.query('SELECT openingpath FROM opening WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).send('Média non trouvé');
+        }
+        const opening = result.rows[0];
+        const openingpath = opening.openingpath;
+
+        const fileName = path.basename(openingpath);
+        const filePath = path.join(mediaDir, fileName);
+
+        if (!filePath.startsWith(mediaDir)) {
+            return res.status(403).send('Accès refusé');
+        }
+
+        if (fs.existsSync(filePath)) {
+            res.sendFile(filePath);
+        } else {
+            res.status(404).send('Média non trouvé');
+        }
     } catch (err) {
         console.error(err);
         res.status(500).send('Erreur du serveur');
@@ -361,8 +382,8 @@ app.get('/anime', async (req, res) => {
 
 app.post('/validate', (req, res) => {
     const { userInput, correctNames } = req.body;
-    const normalizedUserInput = normalizeString(userInput);
-    const normalizedCorrectNames = correctNames.map(name => normalizeString(name));
+    const normalizedUserInput = normalizeString(userInput || '');
+    const normalizedCorrectNames = (correctNames || []).map(name => normalizeString(name || ''));
     const isValid = normalizedCorrectNames.some(name => name === normalizedUserInput);
     res.json({ valid: isValid });
 });
@@ -394,48 +415,28 @@ app.get('/get-images-data', (req, res) => {
 });
 
 app.get('/get-image', (req, res) => {
-    let imagePath = req.query.path;
-    if (imagePath) {
-        // Décoder le composant URI
-        imagePath = decodeURIComponent(imagePath);
+    const imagePath = decodeURIComponent(req.query.path || '');
 
-        // Définir le répertoire de base autorisé
-        const baseDir = path.join(__dirname, 'image');
+    if (!imagePath) {
+        return res.status(400).send({ error: 'Aucun chemin fourni.' });
+    }
 
-        // Normaliser le chemin pour éviter les attaques de type "path traversal"
-        let normalizedPath = path.normalize(imagePath);
+    const baseDir = path.join(__dirname, 'image');
+    const normalizedPath = path.normalize(path.join(baseDir, imagePath));
 
-        // Vérifier si le chemin est absolu
-        if (path.isAbsolute(normalizedPath)) {
-            // Vérifier que le chemin commence par le répertoire de base autorisé
-            if (!normalizedPath.startsWith(baseDir)) {
-                return res.status(403).send({ error: 'Accès refusé.' });
-            }
-        } else {
-            // Si le chemin est relatif, le résoudre par rapport au répertoire de base
-            normalizedPath = path.join(baseDir, normalizedPath);
-        }
+    if (!normalizedPath.startsWith(baseDir)) {
+        return res.status(403).send({ error: 'Accès refusé.' });
+    }
 
-        // Vérifier que le chemin final est toujours dans le répertoire de base
-        if (!normalizedPath.startsWith(baseDir)) {
-            return res.status(403).send({ error: 'Accès refusé.' });
-        }
-
-        // Vérifier si le fichier existe
-        if (fs.existsSync(normalizedPath)) {
-            res.sendFile(normalizedPath);
-        } else {
-            res.status(404).send({ error: 'Image introuvable.' });
-        }
+    if (fs.existsSync(normalizedPath)) {
+        res.sendFile(normalizedPath);
     } else {
-        res.status(400).send({ error: 'Aucun chemin fourni.' });
+        res.status(404).send({ error: 'Image introuvable.' });
     }
 });
 
-
-
 // Démarrage du serveur
-const port = 3000;
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Serveur en cours d'exécution sur le port ${port}`);
 });

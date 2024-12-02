@@ -420,269 +420,289 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
     <!-- JavaScript -->
     <script>
-        let imagesData = [];
-        let currentAnime = null;
-        let currentImages = [];
-        let currentImageIndex = 0;
-        let lives = 3;
-        let score = 0;
-        let round = 1;
-        const totalRounds = 10;
+// Variables globales
+let imagesData = [];
+let currentAnime = null;
+let currentImages = [];
+let currentImageIndex = 0;
+let lives = 3;
+let score = 0;
+let round = 1;
+const totalRounds = 10;
 
-        const animeImage = document.getElementById('anime-image');
-        const nextImageButton = document.getElementById('next-image');
-        const dontKnowButton = document.getElementById('dont-know');
-        const submitGuessButton = document.getElementById('submit-guess');
-        const animeGuessInput = document.getElementById('anime-guess');
-        const notification = document.getElementById('notification');
+// Mise en cache des éléments DOM
+const animeImage = document.getElementById('anime-image');
+const nextImageButton = document.getElementById('next-image');
+const dontKnowButton = document.getElementById('dont-know');
+const submitGuessButton = document.getElementById('submit-guess');
+const animeGuessInput = document.getElementById('anime-guess');
+const notification = document.getElementById('notification');
+const livesElement = document.getElementById('lives');
+const roundElement = document.getElementById('round');
+const scoreElement = document.getElementById('score');
+const finalScoreElement = document.getElementById('final-score');
+const endgamePopup = document.getElementById('endgame-popup');
+const menuButton = document.getElementById('menu-button');
+const restartButton = document.getElementById('restart-button');
 
-        // Fonction pour afficher une notification
-        function showNotification(message, isSuccess = true) {
-            notification.textContent = message;
-            notification.style.background = isSuccess ? 'var(--color-tertiary)' : 'var(--color-secondary)';
-            notification.style.color = '#ffffff';
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+// Précharger les images pour réduire les latences
+const preloadedImages = {};
+
+// Fonction pour afficher une notification
+function showNotification(message, isSuccess = true) {
+    notification.textContent = message;
+    notification.style.background = isSuccess ? 'var(--color-tertiary)' : 'var(--color-secondary)';
+    notification.style.color = '#ffffff';
+    notification.classList.add('show');
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
+
+// Fonction pour mettre à jour le fond en fonction de la couleur dominante de l'image
+function updateBackgroundColor(imageElement) {
+    const colorThief = new ColorThief();
+
+    // Assurez-vous que l'image est chargée
+    if (imageElement.complete && imageElement.naturalHeight !== 0) {
+        applyColor();
+    } else {
+        imageElement.addEventListener('load', applyColor);
+    }
+
+    function applyColor() {
+        try {
+            const dominantColor = colorThief.getColor(imageElement);
+            // Convertir le tableau RGB en format CSS
+            const rgbColor = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
+            // Appliquer la couleur dominante au fond avec une légère transparence
+            document.body.style.background = `linear-gradient(135deg, rgba(0,0,0,0.8), ${rgbColor})`;
+        } catch (error) {
+            console.error('Erreur lors de l\'extraction de la couleur dominante:', error);
         }
+    }
+}
 
-        // Fonction pour mettre à jour le fond en fonction de la couleur dominante de l'image
-        function updateBackgroundColor(imageElement) {
-            const colorThief = new ColorThief();
+// Charger les données des animés
+async function loadImagesData() {
+    try {
+        const response = await fetch('/get-images-data');
+        imagesData = await response.json();
+        // Initialiser l'autocomplétion après le chargement des données
+        initAutocomplete();
+        startNewRound();
+    } catch (error) {
+        console.error("Erreur lors du chargement des données des images :", error);
+    }
+}
 
-            // Assurez-vous que l'image est chargée
-            if (imageElement.complete && imageElement.naturalHeight !== 0) {
-                applyColor();
-            } else {
-                imageElement.addEventListener('load', applyColor);
-            }
+// Initialiser l'autocomplétion
+function initAutocomplete() {
+    // Extraire les noms d'animés pour l'autocomplétion, en supprimant les doublons
+    const animeNames = [...new Set(imagesData.map(anime => anime.Name))];
 
-            function applyColor() {
-                try {
-                    const dominantColor = colorThief.getColor(imageElement);
-                    // Convertir le tableau RGB en format CSS
-                    const rgbColor = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
-                    // Appliquer la couleur dominante au fond avec une légère transparence
-                    document.body.style.background = `linear-gradient(135deg, rgba(0,0,0,0.8), ${rgbColor})`;
-                } catch (error) {
-                    console.error('Erreur lors de l\'extraction de la couleur dominante:', error);
-                }
-            }
+    // Initialiser l'autocomplétion avec limitation du nombre de suggestions
+    $("#anime-guess").autocomplete({
+        source: function(request, response) {
+            const results = $.ui.autocomplete.filter(animeNames, request.term);
+            response(results.slice(0, 10)); // Limite à 10 suggestions
+        },
+        appendTo: ".guess-container",
+        position: { my: "left top", at: "left bottom", collision: "flip" },
+        autoFocus: true,
+        delay: 0,
+        minLength: 2
+    });
+}
+
+// Démarrer une nouvelle manche
+function startNewRound() {
+    if (round > totalRounds) {
+        endGame();
+        return;
+    }
+
+    lives = 3;
+    currentImageIndex = 0;
+    livesElement.textContent = lives;
+    roundElement.textContent = round;
+
+    // Sélectionner un animé aléatoire
+    currentAnime = imagesData[Math.floor(Math.random() * imagesData.length)];
+    currentImages = getSortedImages(currentAnime);
+
+    // Précharger les images de l'anime actuel
+    currentImages.forEach(imagePath => {
+        if (!preloadedImages[imagePath]) {
+            const img = new Image();
+            img.src = '/get-image?path=' + encodeURIComponent(imagePath);
+            preloadedImages[imagePath] = img;
         }
+    });
 
-        // Charger les données des animés
-        async function loadImagesData() {
-            try {
-                const response = await fetch('/get-images-data');
-                imagesData = await response.json();
-                // Initialiser l'autocomplétion après le chargement des données
-                initAutocomplete();
-                startNewRound();
-            } catch (error) {
-                console.error("Erreur lors du chargement des données des images :", error);
-            }
-        }
+    displayCurrentImage();
+}
 
-        // Initialiser l'autocomplétion
-        function initAutocomplete() {
-            // Extraire les noms d'animés pour l'autocomplétion
-            let animeNames = imagesData.map(anime => anime.Name);
+// Obtenir les images triées par difficulté avec randomisation
+function getSortedImages(anime) {
+    const difficulties = {1: [], 2: [], 3: [], 4: []};
 
-            // Initialiser l'autocomplétion
-            $(function() {
-                $("#anime-guess").autocomplete({
-                    source: animeNames,
-                    appendTo: ".guess-container",
-                    position: { my: "left top", at: "left bottom", collision: "flip" },
-                    autoFocus: true,
-                    delay: 0,
-                    minLength: 2 // Commencer l'autocomplétion à partir du deuxième caractère
-                });
-            });
-        }
-
-        // Démarrer une nouvelle manche
-        function startNewRound() {
-            if (round > totalRounds) {
-                endGame();
-                return;
-            }
-
-            lives = 3;
-            currentImageIndex = 0;
-            document.getElementById('lives').textContent = lives;
-            document.getElementById('round').textContent = round;
-
-            // Sélectionner un animé aléatoire
-            currentAnime = imagesData[Math.floor(Math.random() * imagesData.length)];
-            currentImages = getSortedImages(currentAnime);
-            displayCurrentImage();
-        }
-
-        // Obtenir les images triées par difficulté avec randomisation
-        function getSortedImages(anime) {
-            let images = [];
-            let difficulties = {1: [], 2: [], 3: [], 4: []};
-
-            // Parcourir les images et les trier par difficulté
-            for (let key in anime) {
-                if (key.startsWith('image')) {
-                    let imagePath = anime[key];
-                    let difficulty = getDifficultyFromImageName(imagePath);
-                    if (difficulty) {
-                        difficulties[difficulty].push(imagePath);
-                    }
-                }
-            }
-
-            // Construire la liste des images en respectant les exceptions et en randomisant
-            let orderedDifficulties = [4, 3, 2, 1];
-            for (let diff of orderedDifficulties) {
-                if (difficulties[diff].length > 0) {
-                    // Sélectionner une image aléatoire de cette difficulté
-                    let randomIndex = Math.floor(Math.random() * difficulties[diff].length);
-                    images.push(difficulties[diff].splice(randomIndex, 1)[0]);
-                } else {
-                    // Si pas d'image pour cette difficulté, prendre une image de la difficulté inférieure
-                    let found = false;
-                    for (let lowerDiff = diff - 1; lowerDiff >= 1; lowerDiff--) {
-                        if (difficulties[lowerDiff].length > 0) {
-                            let randomIndex = Math.floor(Math.random() * difficulties[lowerDiff].length);
-                            images.push(difficulties[lowerDiff].splice(randomIndex, 1)[0]);
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        // Si aucune image n'est disponible, continuer
-                        continue;
-                    }
-                }
-            }
-
-            // Limiter à 4 images maximum
-            images = images.slice(0, 4);
-
-            return images;
-        }
-
-        // Extraire la difficulté du nom de fichier
-        function getDifficultyFromImageName(imageName) {
-            let basename = imageName.substring(imageName.lastIndexOf('/') + 1);
-            let match = basename.match(/^(\d+)_/);
-            if (match) {
-                return parseInt(match[1], 10);
-            }
-            return null;
-        }
-
-        // Afficher l'image actuelle
-        function displayCurrentImage() {
-            if (currentImageIndex < currentImages.length) {
-                animeImage.src = '/get-image?path=' + encodeURIComponent(currentImages[currentImageIndex]);
-                updateBackgroundColor(animeImage); // Mettre à jour le fond en fonction de l'image
-            } else {
-                // Toutes les images ont été affichées
-                showNotification("Vous avez utilisé toutes les images !");
+    // Parcourir les images et les trier par difficulté
+    for (const key in anime) {
+        if (key.startsWith('image')) {
+            const imagePath = anime[key];
+            const difficulty = getDifficultyFromImageName(imagePath);
+            if (difficulty) {
+                difficulties[difficulty].push(imagePath);
             }
         }
+    }
 
-        // Gérer le clic sur "Image Suivante"
-        nextImageButton.addEventListener('click', () => {
-            currentImageIndex++;
-            if (currentImageIndex < currentImages.length) {
-                displayCurrentImage();
-            } else {
-                showNotification("Plus d'images disponibles !");
-            }
-        });
+    // Construire la liste des images en respectant les difficultés
+    const images = [];
+    const orderedDifficulties = [4, 3, 2, 1];
+    orderedDifficulties.forEach(diff => {
+        if (difficulties[diff].length > 0) {
+            // Mélanger les images de cette difficulté
+            shuffleArray(difficulties[diff]);
+            images.push(...difficulties[diff]);
+        }
+    });
 
-        // Gérer le clic sur "Je ne sais pas"
-        dontKnowButton.addEventListener('click', () => {
-            showNotification(`La bonne réponse était : ${currentAnime.Name}`, false);
+    // Limiter à 4 images maximum
+    return images.slice(0, 4);
+}
+
+// Fonction utilitaire pour mélanger un tableau
+function shuffleArray(array) {
+    for (let i = array.length -1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Extraire la difficulté du nom de fichier
+function getDifficultyFromImageName(imageName) {
+    const basename = imageName.substring(imageName.lastIndexOf('/') + 1);
+    const match = basename.match(/^(\d+)_/);
+    if (match) {
+        return parseInt(match[1], 10);
+    }
+    return null;
+}
+
+// Afficher l'image actuelle
+function displayCurrentImage() {
+    if (currentImageIndex < currentImages.length) {
+        const imagePath = currentImages[currentImageIndex];
+        const preloadedImage = preloadedImages[imagePath];
+        if (preloadedImage) {
+            animeImage.src = preloadedImage.src;
+        } else {
+            animeImage.src = '/get-image?path=' + encodeURIComponent(imagePath);
+        }
+        updateBackgroundColor(animeImage); // Mettre à jour le fond en fonction de l'image
+    } else {
+        // Toutes les images ont été affichées
+        showNotification("Vous avez utilisé toutes les images !");
+    }
+}
+
+// Gérer le clic sur "Image Suivante"
+nextImageButton.addEventListener('click', () => {
+    currentImageIndex++;
+    if (currentImageIndex < currentImages.length) {
+        displayCurrentImage();
+    } else {
+        showNotification("Plus d'images disponibles !");
+    }
+});
+
+// Gérer le clic sur "Je ne sais pas"
+dontKnowButton.addEventListener('click', () => {
+    showNotification(`La bonne réponse était : ${currentAnime.Name}`, false);
+    round++;
+    animeGuessInput.value = '';
+    startNewRound();
+});
+
+// Gérer la soumission de la réponse
+submitGuessButton.addEventListener('click', checkGuess);
+
+// Gérer la soumission avec la touche Entrée et navigation dans l'autocomplétion
+animeGuessInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        if ($(".ui-menu-item-wrapper.ui-state-active").length) {
+            // Si une suggestion est sélectionnée, la choisir
+            $(this).autocomplete("close");
+        }
+        checkGuess();
+    }
+});
+
+function checkGuess() {
+    const userGuess = animeGuessInput.value.trim().toLowerCase();
+    const correctAnswer = currentAnime.Name.trim().toLowerCase();
+
+    if (userGuess === correctAnswer) {
+        // Bonne réponse
+        const pointsEarned = calculatePoints();
+        score += pointsEarned;
+        scoreElement.textContent = score;
+        showNotification(`Bravo ! Vous avez gagné ${pointsEarned} points.`, true);
+        animeGuessInput.value = '';
+        round++;
+        startNewRound();
+    } else {
+        // Mauvaise réponse
+        lives--;
+        livesElement.textContent = lives;
+        if (lives <= 0) {
+            showNotification(`Vous avez perdu ! La bonne réponse était : ${currentAnime.Name}`, false);
+            animeGuessInput.value = '';
             round++;
-            animeGuessInput.value = '';
             startNewRound();
-        });
-
-        // Gérer la soumission de la réponse
-        submitGuessButton.addEventListener('click', checkGuess);
-
-        // Gérer la soumission avec la touche Entrée et navigation dans l'autocomplétion
-        animeGuessInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                if ($(".ui-menu-item-wrapper.ui-state-active").length) {
-                    // Si une suggestion est sélectionnée, la choisir
-                    $(this).autocomplete("close");
-                }
-                checkGuess();
-            }
-        });
-
-        function checkGuess() {
-            const userGuess = animeGuessInput.value.trim().toLowerCase();
-            const correctAnswer = currentAnime.Name.trim().toLowerCase();
-
-            if (userGuess === correctAnswer) {
-                // Bonne réponse
-                let pointsEarned = calculatePoints();
-                score += pointsEarned;
-                document.getElementById('score').textContent = score;
-                showNotification(`Bravo ! Vous avez gagné ${pointsEarned} points.`, true);
-                animeGuessInput.value = '';
-                round++;
-                startNewRound();
-            } else {
-                // Mauvaise réponse
-                lives--;
-                document.getElementById('lives').textContent = lives;
-                if (lives <= 0) {
-                    showNotification(`Vous avez perdu ! La bonne réponse était : ${currentAnime.Name}`, false);
-                    animeGuessInput.value = '';
-                    round++;
-                    startNewRound();
-                } else {
-                    showNotification(`Incorrect ! Il vous reste ${lives} vies.`, false);
-                }
-            }
+        } else {
+            showNotification(`Incorrect ! Il vous reste ${lives} vies.`, false);
         }
+    }
+}
 
-        // Calculer les points en fonction des vies restantes et du nombre d'images utilisées
-        function calculatePoints() {
-            let basePoints = 10;
-            let imagePenalty = currentImageIndex * 2;
-            let lifePenalty = (3 - lives) * 2;
-            return Math.max(basePoints - imagePenalty - lifePenalty, 1);
-        }
+// Calculer les points en fonction des vies restantes et du nombre d'images utilisées
+function calculatePoints() {
+    const basePoints = 10;
+    const imagePenalty = currentImageIndex * 2;
+    const lifePenalty = (3 - lives) * 2;
+    return Math.max(basePoints - imagePenalty - lifePenalty, 1);
+}
 
-        // Fin du jeu
-        function endGame() {
-            document.getElementById('final-score').textContent = score;
-            document.getElementById('endgame-popup').style.display = 'block';
-        }
+// Fin du jeu
+function endGame() {
+    finalScoreElement.textContent = score;
+    endgamePopup.style.display = 'block';
+}
 
-        // Gérer le clic sur "Recommencer"
-        document.getElementById('restart-button').addEventListener('click', () => {
-            score = 0;
-            round = 1;
-            lives = 3;
-            document.getElementById('score').textContent = score;
-            document.getElementById('round').textContent = round;
-            document.getElementById('lives').textContent = lives;
-            document.getElementById('endgame-popup').style.display = 'none';
-            animeGuessInput.value = '';
-            startNewRound();
-        });
+// Gérer le clic sur "Recommencer"
+restartButton.addEventListener('click', () => {
+    score = 0;
+    round = 1;
+    lives = 3;
+    scoreElement.textContent = score;
+    roundElement.textContent = round;
+    livesElement.textContent = lives;
+    endgamePopup.style.display = 'none';
+    animeGuessInput.value = '';
+    startNewRound();
+});
 
-        // Gérer le clic sur "Menu Principal"
-        document.getElementById('menu-button').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
+// Gérer le clic sur "Menu Principal"
+menuButton.addEventListener('click', () => {
+    window.location.href = 'index.html';
+});
 
-        // Charger les données au démarrage
-        loadImagesData();
+// Charger les données au démarrage
+loadImagesData();
     </script>
 </body>
 </html>
