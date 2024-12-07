@@ -2,122 +2,182 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Sélection de la Difficulté</title>
-    <style>
-    /* Import des polices */
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Press+Start+2P&display=swap');
-
-    /* Palette de couleurs */
-    :root {
-        --primary-color: #ff6b6b;
-        --secondary-color: #5f27cd;
-        --accent-color: #1dd1a1;
-        --background-color: #f5f6fa;
-        --text-color: #2d3436;
-        --white-color: #ffffff;
-        --gradient-start: #ff6b6b;
-        --gradient-end: #1dd1a1;
-    }
-
-    /* Réinitialisation des marges et paddings */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: 'Roboto', sans-serif;
-        background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-        color: var(--text-color);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .container {
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 15px;
-        padding: 30px;
-        max-width: 800px;
-        width: 90%;
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        animation: fadeIn 1s ease;
-    }
-
-    h1 {
-        font-size: 2.5rem;
-        margin-bottom: 30px;
-        color: var(--secondary-color);
-        font-family: 'Press Start 2P', cursive;
-    }
-
-    .difficulty-selector {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .difficulty-selector button {
-        background-color: var(--secondary-color);
-        color: var(--white-color);
-        border: none;
-        padding: 15px 30px;
-        margin: 10px;
-        font-size: 1.2rem;
-        border-radius: 50px;
-        cursor: pointer;
-        transition: background-color 0.3s, transform 0.2s;
-    }
-
-    .difficulty-selector button:hover {
-        background-color: var(--accent-color);
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        h1 {
-            font-size: 2rem;
-        }
-
-        .difficulty-selector button {
-            font-size: 1rem;
-            padding: 12px 20px;
-        }
-    }
-    </style>
+    <title>Sélection de Mode</title>
     <!-- Import des polices -->
     <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+    <style>
+        /* Styles généraux */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a, #1a1a1a, #2a2a2a);
+            background-size: 400% 400%;
+            animation: gradientAnimation 10s ease infinite;
+            z-index: -1;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            margin-top: 100px;
+        }
+
+button {
+    padding: 20px 60px; /* Augmente l'espace intérieur */
+    font-size: 24px; /* Augmente la taille du texte */
+    cursor: pointer;
+    border: none;
+    border-radius: 10px; /* Coins légèrement arrondis */
+    background-color: #1f1f1f;
+    color: #e0e0e0;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+button:hover {
+    background-color: #333333;
+    transform: scale(1.1); /* Effet de survol pour un léger agrandissement */
+}
+
+        /* Styles pour le modal */
+        .modal {
+            display: none; /* Caché par défaut */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8); /* Fond semi-transparent */
+        }
+
+        .modal-content {
+            background-color: #1f1f1f;
+            margin: 15% auto;
+            padding: 30px;
+            border: 1px solid #333;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            border-radius: 8px;
+            color: #e0e0e0;
+        }
+
+        .close {
+            color: #888;
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #fff;
+        }
+
+        .modal button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            background-color: #292929;
+            color: #e0e0e0;
+            transition: background-color 0.3s;
+        }
+
+        .modal button:hover {
+            background-color: #3a3a3a;
+        }
+    </style>
 </head>
 <body>
+    <div class="background"></div>
     <div class="container">
-        <h1>Sélection de la Difficulté</h1>
-        <div class="difficulty-selector">
-            <button onclick="setDifficulty('easy')">Facile</button>
-            <button onclick="setDifficulty('normal')">Normal</button>
-            <button onclick="setDifficulty('hard')">Difficile</button>
+        <h1>Sélection de Mode</h1>
+        
+        <!-- Bouton Solo -->
+        <button onclick="selectSolo()">Solo</button>
+        
+        <!-- Bouton Multijoueur -->
+        <button onclick="selectMultijoueur()">Multijoueur</button>
+    </div>
+
+    <!-- Popup Modal pour la sélection de la difficulté -->
+    <div id="difficultyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Choisissez la difficulté</h2>
+            <button onclick="startSolo('easy')">Facile</button>
+            <button onclick="startSolo('normal')">Normal</button>
+            <button onclick="startSolo('hard')">Difficile</button>
         </div>
     </div>
+
     <script>
-        function setDifficulty(level) {
-            localStorage.setItem('difficulty', level);
+        // Fonction pour afficher le popup Solo
+        function selectSolo() {
+            document.getElementById('difficultyModal').style.display = 'block';
+        }
+
+        // Fonction pour fermer le popup
+        function closeModal() {
+            document.getElementById('difficultyModal').style.display = 'none';
+        }
+
+        // Fonction pour démarrer le mode Solo
+        function startSolo(difficulty) {
+            // Demander le nom du joueur
+            let playerName = prompt("Entrez votre nom :", "Joueur");
+            if (!playerName || playerName.trim() === "") {
+                alert("Nom invalide. Veuillez réessayer.");
+                return;
+            }
+            playerName = playerName.trim();
+
+            // Stocker les informations dans le localStorage
+            localStorage.setItem('playerName', playerName);
+            localStorage.setItem('difficulty', difficulty);
+
+            // Fermer le modal
+            closeModal();
+
+            // Rediriger vers le jeu Solo
             window.location.href = 'quiz.html';
+        }
+
+        // Fonction pour sélectionner le mode Multijoueur
+        function selectMultijoueur() {
+            window.location.href = 'multijoueur.html';
+        }
+
+        // Fermer le modal si l'utilisateur clique en dehors du contenu
+        window.onclick = function(event) {
+            const modal = document.getElementById('difficultyModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
         }
     </script>
 </body>

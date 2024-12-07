@@ -17,6 +17,9 @@
     "fast-levenshtein": "^3.0.0",
     "pg": "^8.13.0",
     "seedrandom": "^3.0.5",
-    "unaccent": "^0.0.1"
+    "socket.io": "^4.8.1",
+    "unaccent": "^0.0.1",
+    "uuid": "^11.0.3",
+    "ws": "^8.18.0"
   }
 }
