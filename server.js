@@ -4,6 +4,8 @@ const fs = require('fs');
 const { Pool } = require('pg');
 const session = require('express-session');
 const WebSocket = require('ws');
+const crypto = require('crypto');
+const unaccent = require('unaccent'); // Assurez-vous que ce module est installé
 
 const app = express();
 const server = require('http').createServer(app);
@@ -378,6 +380,18 @@ app.get('/anime', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Erreur du serveur');
+    }
+});
+
+app.get('/current-anime-answer', (req, res) => {
+    const currentAnime = req.session.currentAnime;
+    if (currentAnime) {
+        const correctAnswerFormatted = currentAnime.title !== currentAnime.alt_title
+            ? `${currentAnime.alt_title} (${currentAnime.title})`
+            : currentAnime.title;
+        res.json({ correctAnswer: correctAnswerFormatted });
+    } else {
+        res.status(404).json({ error: 'Aucun animé en cours' });
     }
 });
 
