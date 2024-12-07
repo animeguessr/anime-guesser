@@ -340,7 +340,7 @@ app.get('/media/:id', async (req, res) => {
             return res.status(404).send('Média non trouvé');
         }
         const openingpath = result.rows[0].openingpath;
-        const filePath = path.join(__dirname, 'opening', 'opening', path.basename(openingpath));
+        const filePath = path.join(__dirname, 'opening', path.basename(openingpath));
 
         if (fs.existsSync(filePath)) {
             res.sendFile(filePath);
@@ -381,7 +381,40 @@ app.get('/anime', async (req, res) => {
     }
 });
 
+app.get('/4image', (req, res) => {
+    res.sendFile(path.join(__dirname, '4image.html'));
+});
 
+app.get('/get-images-data', (req, res) => {
+    const imagesDataPath = path.join(__dirname, 'image', 'images_data.json');
+    if (fs.existsSync(imagesDataPath)) {
+        const imagesData = JSON.parse(fs.readFileSync(imagesDataPath, 'utf-8'));
+        res.json(imagesData);
+    } else {
+        res.status(500).send({ error: 'Le fichier images_data.json est introuvable.' });
+    }
+});
+
+app.get('/get-image', (req, res) => {
+    const imagePath = decodeURIComponent(req.query.path || '');
+
+    if (!imagePath) {
+        return res.status(400).send({ error: 'Aucun chemin fourni.' });
+    }
+
+    const baseDir = path.join(__dirname, 'image');
+    const normalizedPath = path.normalize(path.join(baseDir, imagePath));
+
+    if (!normalizedPath.startsWith(baseDir)) {
+        return res.status(403).send({ error: 'Accès refusé.' });
+    }
+
+    if (fs.existsSync(normalizedPath)) {
+        res.sendFile(normalizedPath);
+    } else {
+        res.status(404).send({ error: 'Image introuvable.' });
+    }
+});
 
 app.post('/validate', (req, res) => {
     const { userInput, correctNames } = req.body;
