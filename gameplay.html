@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Guesser - Jeu</title>
+    <!-- Inclusion des styles -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Utilisation de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <h1>Anime Guesser</h1>
+        <h2>Niveau : <span id="level-name"></span></h2>
+    </div>
+    <div class="score-container">
+        Score : <span id="score">0</span>
+    </div>
+    <div class="lives-container" id="lives-container">
+        <!-- Icônes de vies seront insérées ici -->
+    </div>
+    <div class="game-container">
+        <div class="game-image">
+            <img id="anime-image" draggable="false" oncontextmenu="return false;" src="" alt="Anime Image">
+        </div>
+        <div class="round-container">
+            Round <span id="round-number">1</span>/<span id="max-rounds">10</span>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="answer-input" placeholder="Entrez le nom de l'animé">
+        </div>
+        <div>
+            <button id="submit-button">Valider</button>
+            <button id="deflouter-button">Déflouter</button>
+            <button id="skip-button">Je ne sais pas</button>
+        </div>
+        <div id="result-message"></div>
+    </div>
+
+    <!-- Modal de fin de jeu -->
+    <div id="end-game-modal" class="modal">
+        <div class="modal-content">
+            <h2>🎉 Félicitations ! 🎉</h2>
+            <p>Vous avez terminé le jeu.</p>
+            <p>Votre score final est de <span id="final-score"></span> points.</p>
+            <div class="endgame-stats">
+                <p>Rounds joués : <span id="rounds-played"></span> / <span id="total-rounds"></span></p>
+                <!-- Vous pouvez ajouter d'autres statistiques ici -->
+            </div>
+            <button id="restart-button" class="btn">Recommencer</button>
+            <button id="menu-button" class="btn">Menu Principal</button>
+        </div>
+    </div>
+
+    <!-- Inclusion des scripts -->
+    <!-- jQuery et jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <!-- Votre script -->
+    <script src="gameplay.js"></script>
+</body>
+</html>

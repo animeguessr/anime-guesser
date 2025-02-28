@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu Lite Info - Mode Sombre</title>
+  <style>
+    /* Thème sombre moderne */
+    body {
+      background: #1e1e1e;
+      color: #ccc;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    h1, h2 {
+      text-align: center;
+      margin: 0.5em 0;
+      color: #fff;
+    }
+    .game-container {
+      background: #2b2b2b;
+      border-radius: 10px;
+      padding: 40px 30px;
+      max-width: 900px;
+      margin: 40px auto;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
+    }
+    #scoreDisplay {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+    /* Section de difficulté */
+    #difficultyContainer {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    #difficultyContainer select, #difficultyContainer button {
+      padding: 12px 20px;
+      font-size: 18px;
+      border-radius: 5px;
+      margin: 5px;
+      border: none;
+      cursor: pointer;
+      background: #007bff;
+      color: #fff;
+      transition: background 0.3s ease;
+    }
+    #difficultyContainer button:hover {
+      background: #0069d9;
+    }
+    /* Zone de jeu */
+    #gameArea {
+      display: none;
+    }
+    /* Disposition des champs */
+    .field-container {
+      margin-bottom: 30px;
+    }
+    /* Pour le Titre, qui occupe une ligne entière */
+    .title-container {
+      margin-bottom: 30px;
+    }
+    .title-container .input-group {
+      width: 100%;
+    }
+    /* Les 6 autres champs en 2 lignes de 3 colonnes */
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 250px;
+    }
+    .input-group label {
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #aaa;
+    }
+    .input-group input,
+    .input-group select {
+      padding: 12px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: #3a3a3a;
+      color: #eee;
+      font-size: 16px;
+      transition: border 0.2s ease, background 0.2s ease;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 5px rgba(0,123,255,0.5);
+    }
+    /* Couleurs pour réponses correctes/incorrectes */
+    input.correct, select.correct {
+      border: 2px solid #4caf50;
+      background: #2e7d32;
+    }
+    input.incorrect, select.incorrect {
+      border: 2px solid #f44336;
+      background: #c62828;
+    }
+    /* Boutons */
+    .buttons {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .buttons button {
+      padding: 14px 30px;
+      margin: 8px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    button#validate {
+      background-color: #007bff;
+      color: #fff;
+    }
+    button#validate:hover {
+      background-color: #0069d9;
+    }
+    button#retry {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    button#retry:hover {
+      background-color: #c82333;
+    }
+    button#voirReponses {
+      background-color: #6c757d;
+      color: #fff;
+    }
+    button#voirReponses:hover {
+      background-color: #5a6268;
+    }
+    button#next {
+      background-color: #28a745;
+      color: #fff;
+    }
+    button#next:hover {
+      background-color: #218838;
+    }
+    #message {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 20px;
+      font-size: 18px;
+      color: #fff;
+    }
+    /* Responsive */
+    @media (max-width: 600px) {
+      .field-row {
+        flex-direction: column;
+        align-items: center;
+      }
+      .input-group {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Jeu Lite Info</h1>
+  <div class="game-container">
+    <div id="scoreDisplay">Score : 0 points</div>
+    
+    <!-- Section de difficulté -->
+    <div id="difficultyContainer">
+      <label for="difficulty" style="font-size:18px; font-weight:bold;">Choisissez la difficulté :</label>
+      <select id="difficulty">
+        <option value="easy">Facile</option>
+        <option value="medium">Moyen</option>
+        <option value="hard">Difficile</option>
+      </select>
+      <button id="start">Démarrer</button>
+    </div>
+    
+    <!-- Zone de jeu -->
+    <div id="gameArea">
+      <h2 id="gamePrompt" style="text-align:center;">Remplissez les champs pour deviner l'anime</h2>
+      
+      <!-- Zone pour le champ Titre sur une ligne entière -->
+      <div class="field-container title-container">
+        <div class="input-group">
+          <label for="title">Titre</label>
+          <input type="text" id="title" placeholder="Devinez le titre" list="titleList">
+          <datalist id="titleList"></datalist>
+        </div>
+      </div>
+      
+      <!-- Les 6 autres champs en 2 lignes de 3 colonnes -->
+      <div class="field-container">
+        <div class="field-row">
+          <div class="input-group">
+            <label for="is_sequel">Suite ?</label>
+            <select id="is_sequel">
+              <option value="">-- Choisir --</option>
+              <option value="true">Oui</option>
+              <option value="false">Non</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="date_de_sortie">Année</label>
+            <input type="number" id="date_de_sortie" placeholder="YYYY">
+          </div>
+          <div class="input-group">
+            <label for="anime_type">Type</label>
+            <input type="text" id="anime_type" placeholder="TV, Movie, etc." list="animeTypeList">
+            <datalist id="animeTypeList"></datalist>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="input-group">
+            <label for="origine">Origine</label>
+            <select id="origine">
+              <option value="">-- Choisir --</option>
+              <option value="Manga">Manga</option>
+              <option value="Light Novel">Light Novel</option>
+              <option value="Roman">Roman</option>
+              <option value="Novel Series">Novel Series</option>
+              <option value="Animé">Animé</option>
+              <option value="Jeu Vidéo">Jeu Vidéo</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="compositeur">Compositeur</label>
+            <input type="text" id="compositeur" placeholder="Compositeur" list="compositeurList">
+            <datalist id="compositeurList"></datalist>
+          </div>
+          <div class="input-group">
+            <label for="auteur">Auteur</label>
+            <input type="text" id="auteur" placeholder="Auteur" list="auteurList">
+            <datalist id="auteurList"></datalist>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Boutons de contrôle -->
+      <div class="buttons">
+        <button id="validate">Valider</button>
+        <button id="retry" style="display:none;">Réessayer</button>
+        <button id="voirReponses" style="display:none;">Voir les réponses</button>
+        <button id="next" style="display:none;">Passer</button>
+      </div>
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <script>
+    // Points attribués par champ
+    const pointsMapping = {
+      title: 5,
+      is_sequel: 2,
+      date_de_sortie: 6,
+      anime_type: 1,
+      origine: 4,
+      auteur: 8,
+      compositeur: 13
+    };
+
+    let totalScore = 0;
+    let currentAnime = null;
+    let prefillFields = [];
+    let mode = "easy";
+
+    // Références aux éléments
+    const startBtn = document.getElementById("start");
+    const difficultySelect = document.getElementById("difficulty");
+    const difficultyContainer = document.getElementById("difficultyContainer");
+    const gameArea = document.getElementById("gameArea");
+    const gamePrompt = document.getElementById("gamePrompt");
+    const validateBtn = document.getElementById("validate");
+    const retryBtn = document.getElementById("retry");
+    const voirReponsesBtn = document.getElementById("voirReponses");
+    const nextBtn = document.getElementById("next");
+    const messageDiv = document.getElementById("message");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+
+    // Champs à deviner (ordre : titre, puis les 6 autres)
+    const fields = ["title", "is_sequel", "date_de_sortie", "anime_type", "origine", "compositeur", "auteur"];
+    const inputs = {};
+    fields.forEach(field => {
+      inputs[field] = document.getElementById(field);
+    });
+
+    // Datalists pour autocomplétion
+    const datalists = {
+      title: document.getElementById("titleList"),
+      anime_type: document.getElementById("animeTypeList"),
+      compositeur: document.getElementById("compositeurList"),
+      auteur: document.getElementById("auteurList")
+    };
+
+    async function fetchSuggestions(field, term) {
+      try {
+        const response = await fetch(`/autocomplete?field=${field}&term=${encodeURIComponent(term)}`);
+        const data = await response.json();
+        return data.suggestions;
+      } catch (err) {
+        console.error("Erreur autocomplete pour", field, err);
+        return [];
+      }
+    }
+
+    async function updateDatalist(field) {
+      const term = inputs[field].value;
+      const suggestions = await fetchSuggestions(field, term);
+      const datalist = datalists[field];
+      datalist.innerHTML = "";
+      suggestions.forEach(suggestion => {
+        const option = document.createElement("option");
+        option.value = suggestion;
+        datalist.appendChild(option);
+      });
+    }
+
+    ["title", "anime_type", "compositeur", "auteur"].forEach(field => {
+      inputs[field].addEventListener("input", () => updateDatalist(field));
+    });
+
+    async function loadGame() {
+      mode = difficultySelect.value;
+      // Masquer la section de difficulté une fois le jeu lancé
+      difficultyContainer.style.display = "none";
+      validateBtn.style.display = "inline-block";
+      retryBtn.style.display = "none";
+      voirReponsesBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      messageDiv.textContent = "";
+
+      try {
+        const response = await fetch(`/game?mode=${mode}`);
+        const data = await response.json();
+        currentAnime = data.anime;
+        prefillFields = data.prefillFields;
+        console.log("Donnée reçue :", data);
+        displayGame();
+      } catch (err) {
+        console.error(err);
+        messageDiv.textContent = "Erreur lors du chargement du jeu.";
+      }
+    }
+
+    function displayGame() {
+      gamePrompt.textContent = "Remplissez les champs pour deviner l'anime.";
+      fields.forEach(field => {
+        if (prefillFields.includes(field)) {
+          if (field === "is_sequel") {
+            inputs[field].value = (currentAnime[field] === true || currentAnime[field] === "t") ? "true" : "false";
+          } else if (field === "date_de_sortie") {
+            let year = "";
+            if (currentAnime[field]) {
+              year = currentAnime[field].toString().substring(0, 4);
+            }
+            inputs[field].value = year;
+          } else {
+            inputs[field].value = currentAnime[field] || "";
+          }
+          inputs[field].disabled = true;
+          inputs[field].classList.remove("correct", "incorrect");
+        } else {
+          inputs[field].value = "";
+          inputs[field].disabled = false;
+          inputs[field].classList.remove("correct", "incorrect");
+        }
+      });
+      gameArea.style.display = "block";
+    }
+
+    function validateAnswers() {
+      let allCorrect = true;
+      let roundScore = 0;
+      fields.forEach(field => {
+        // Pour les champs préremplis, on ne compte pas de points (ils sont des indices)
+        if (prefillFields.includes(field)) {
+          return;
+        }
+        let userVal = inputs[field].value.trim();
+        let correctVal = currentAnime[field];
+        if (field === "title") {
+          correctVal = (currentAnime.alt_title || "").toLowerCase();
+          userVal = userVal.toLowerCase();
+        } else if (field === "is_sequel") {
+          userVal = (userVal === "true");
+          correctVal = (correctVal === true || correctVal === "t" || correctVal === "true");
+        } else if (field === "date_de_sortie") {
+          userVal = userVal;
+          correctVal = correctVal ? correctVal.toString().substring(0, 4) : "";
+        } else {
+          userVal = userVal.toLowerCase();
+          correctVal = (correctVal || "").toString().toLowerCase();
+        }
+        if (userVal === correctVal && userVal !== "") {
+          inputs[field].classList.add("correct");
+          inputs[field].classList.remove("incorrect");
+          roundScore += pointsMapping[field];
+        } else {
+          inputs[field].classList.add("incorrect");
+          inputs[field].classList.remove("correct");
+          allCorrect = false;
+        }
+      });
+      totalScore += roundScore;
+      scoreDisplay.textContent = `Score : ${totalScore} points (ce round : ${roundScore})`;
+      
+      if (allCorrect) {
+        messageDiv.textContent = "Bravo ! Toutes les réponses sont correctes.";
+        validateBtn.style.display = "none";
+        retryBtn.style.display = "none";
+        voirReponsesBtn.style.display = "none";
+        nextBtn.style.display = "inline-block";
+      } else {
+        messageDiv.textContent = "Certaines réponses sont incorrectes. Vous gagnez " + roundScore + " points ce round.";
+        retryBtn.style.display = "inline-block";
+        voirReponsesBtn.style.display = "inline-block";
+        nextBtn.style.display = "none";
+      }
+    }
+
+    function voirReponses() {
+      fields.forEach(field => {
+        if (!prefillFields.includes(field)) {
+          if (field === "title") {
+            inputs[field].value = currentAnime.alt_title || "";
+          } else if (field === "is_sequel") {
+            inputs[field].value = (currentAnime[field] === true || currentAnime[field] === "t") ? "true" : "false";
+          } else if (field === "date_de_sortie") {
+            let year = "";
+            if (currentAnime[field]) {
+              year = currentAnime[field].toString().substring(0, 4);
+            }
+            inputs[field].value = year;
+          } else {
+            inputs[field].value = currentAnime[field] || "";
+          }
+          inputs[field].classList.add("correct");
+          inputs[field].disabled = true;
+        }
+      });
+      messageDiv.textContent = "Voici les réponses.";
+      validateBtn.style.display = "none";
+      retryBtn.style.display = "none";
+      voirReponsesBtn.style.display = "none";
+      nextBtn.style.display = "inline-block";
+    }
+
+    function retryGame() {
+      fields.forEach(field => {
+        if (!prefillFields.includes(field)) {
+          inputs[field].value = "";
+          inputs[field].classList.remove("correct", "incorrect");
+          inputs[field].disabled = false;
+        }
+      });
+      messageDiv.textContent = "";
+      validateBtn.style.display = "inline-block";
+      retryBtn.style.display = "none";
+      voirReponsesBtn.style.display = "none";
+    }
+
+    startBtn.addEventListener("click", loadGame);
+    validateBtn.addEventListener("click", validateAnswers);
+    retryBtn.addEventListener("click", retryGame);
+    voirReponsesBtn.addEventListener("click", voirReponses);
+    nextBtn.addEventListener("click", loadGame);
+  </script>
+</body>
+</html>

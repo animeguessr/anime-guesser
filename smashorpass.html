@@ -1,0 +1,855 @@
+k<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Smash or Pass - Jeu Unique</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Global Styles */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: radial-gradient(circle, #0f0f0f, #050505);
+      color: white;
+      overflow-x: hidden;
+    }
+    .hidden { display: none; }
+    /* Background grid animation */
+    .background-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.05) 1px,
+          transparent 1px,
+          transparent 50px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.05) 1px,
+          transparent 1px,
+          transparent 50px
+        );
+      animation: gridAnimation 10s linear infinite;
+      z-index: -1;
+    }
+    @keyframes gridAnimation {
+      from { transform: translate(0,0); }
+      to { transform: translate(-50px,-50px); }
+    }
+    /* Selection View */
+    .select-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .select-container h1 {
+      font-size: 3em;
+      margin-bottom: 40px;
+      color: #ffffff;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .pref-button {
+      font-size: 1.5em;
+      font-weight: bold;
+      padding: 20px 40px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      text-transform: uppercase;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .pref-button.male { background: linear-gradient(135deg, #4444ff, #8888ff); }
+    .pref-button.female { background: linear-gradient(135deg, #ff44aa, #ff88cc); }
+    .pref-button.all { background: linear-gradient(135deg, #ff8844, #ffcc88); }
+    .pref-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+    }
+    /* Game View */
+    .game-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .game-title {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+    .character-image {
+      width: 100%;
+      max-width: 700px;
+      min-width: 300px;
+      max-height: 900px;
+      overflow: hidden;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      margin-bottom: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .character-image img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 15px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .character-name {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .action-buttons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .action-button {
+      font-size: 1.4em;
+      font-weight: bold;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-transform: uppercase;
+      color: black;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .action-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+    }
+    .btn-pass { background: linear-gradient(135deg, #ff4444, #ff8888); }
+    .btn-smash { background: linear-gradient(135deg, #44ff44, #88ff88); }
+    .btn-ultra { background: linear-gradient(135deg, #4444ff, #8888ff); }
+    /* Result View */
+    .result-container {
+      min-height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+    .result-title {
+      font-size: 3em;
+      margin-bottom: 30px;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+    .result-columns {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .result-column {
+      flex: 1;
+      min-width: 250px;
+      max-width: 350px;
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .result-column h2 {
+      font-size: 1.5em;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .result-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      background: rgba(255,255,255,0.2);
+      padding: 10px;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+    .result-item:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .result-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-right: 15px;
+      border: 2px solid #ffffff;
+    }
+    .result-item p {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 0;
+    }
+    .restart-button {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ffffff;
+      background: linear-gradient(135deg, #4444ff, #8888ff);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .restart-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+    }
+    @media (max-width: 768px) {
+      .select-container h1 { font-size: 2.5em; }
+      .pref-button { font-size: 1.3em; padding: 18px 36px; }
+      .game-title { font-size: 2em; }
+      .character-name { font-size: 1.5em; }
+      .action-button { font-size: 1.2em; padding: 10px 20px; }
+      .result-title { font-size: 2.5em; }
+      .result-column h2 { font-size: 1.3em; }
+      .result-item p { font-size: 1em; }
+      .restart-button { font-size: 1em; padding: 10px 20px; }
+    }
+    @media (max-width: 480px) {
+      .select-container h1 { font-size: 2em; }
+      .pref-button { font-size: 1.1em; padding: 15px 30px; }
+      .game-title { font-size: 1.8em; }
+      .character-name { font-size: 1.3em; }
+      .action-button { font-size: 1em; padding: 8px 16px; }
+      .result-title { font-size: 2em; }
+      .result-column h2 { font-size: 1.1em; }
+      .result-item img { width: 50px; height: 50px; }
+      .result-item p { font-size: 0.9em; }
+      .restart-button { font-size: 0.9em; padding: 8px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-grid"></div>
+  <!-- Selection View -->
+  <div id="selectView" class="select-container">
+    <h1>Choisissez votre préférence</h1>
+    <div class="button-group">
+      <button class="pref-button male" onclick="startGame('homme')">Homme</button>
+      <button class="pref-button female" onclick="startGame('femme')">Femme</button>
+      <button class="pref-button all" onclick="startGame('tout')">Tout</button>
+    </div>
+  </div>
+  <!-- Game View -->
+  <div id="gameView" class="game-container hidden">
+    <div class="game-title">Smash or Pass</div>
+    <div class="character-image">
+      <img id="characterImg" src="" alt="Character Image" draggable="false" oncontextmenu="return false;">
+    </div>
+    <div class="character-name" id="characterName"></div>
+    <div class="action-buttons">
+      <button class="action-button btn-pass" onclick="recordChoice('pass')">Pass</button>
+      <button class="action-button btn-smash" onclick="recordChoice('smash')">Smash</button>
+      <button class="action-button btn-ultra" onclick="recordChoice('ultraSmash')">Ultra Smash</button>
+    </div>
+    <div id="gameStatus" style="margin-top:20px;"></div>
+  </div>
+  <!-- Result View -->
+  <div id="resultView" class="result-container hidden">
+    <div class="result-title">Résultats</div>
+    <div class="result-columns">
+      <div class="result-column" id="passColumn">
+        <h2>Pass</h2>
+      </div>
+      <div class="result-column" id="smashColumn">
+        <h2>Smash</h2>
+      </div>
+      <div class="result-column" id="ultraColumn">
+        <h2>Ultra Smash</h2>
+      </div>
+    </div>
+    <button class="restart-button" onclick="restartGame()">Recommencer</button>
+  </div>
+
+  <script>
+    // Global variables et configuration
+    let currentRound = 1;
+    const maxRounds = 25;
+    let preference = '';
+    const choices = { pass: [], smash: [], ultraSmash: [] };
+    // Objet pour le cache des images (url -> dataURL)
+    const imageCache = {};
+
+    // Fonction pour récupérer une image en cache (ou la convertir en dataURL)
+    function getCachedImage(url) {
+      return new Promise((resolve, reject) => {
+        if (imageCache[url]) {
+          resolve(imageCache[url]);
+        } else {
+          fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                imageCache[url] = reader.result;
+                resolve(reader.result);
+              };
+              reader.onerror = () => reject("Erreur lors du chargement de l'image.");
+              reader.readAsDataURL(blob);
+            })
+            .catch(err => reject(err));
+        }
+      });
+    }
+
+    // Fonction pour démarrer le jeu avec la préférence sélectionnée
+    function startGame(pref) {
+      preference = pref;
+      document.getElementById('selectView').classList.add('hidden');
+      document.getElementById('gameView').classList.remove('hidden');
+      currentRound = 1;
+      loadCharacter();
+    }
+
+    // Fonction pour charger un personnage depuis le serveur
+    function loadCharacter() {
+      if (currentRound > maxRounds) {
+        showResults();
+        return;
+      }
+      document.getElementById('gameStatus').textContent = `Round ${currentRound} / ${maxRounds}`;
+      fetch(`/get-character?preference=${encodeURIComponent(preference)}`)
+        .then(response => response.json())
+        .then(character => {
+          if (character.error) {
+            alert("Erreur lors du chargement du personnage.");
+            return;
+          }
+          // Charge et cache l'image
+          getCachedImage(character.image_url)
+            .then(dataUrl => {
+              document.getElementById('characterImg').src = dataUrl;
+            })
+            .catch(err => {
+              console.error(err);
+              document.getElementById('characterImg').src = character.image_url;
+            });
+          document.getElementById('characterName').textContent = character.name || "Nom indisponible";
+          document.getElementById('characterImg').dataset.id = character.id;
+        })
+        .catch(err => {
+          console.error("Erreur de fetch:", err);
+          alert("Erreur lors du chargement du personnage.");
+        });
+    }
+
+    // Fonction pour enregistrer le choix de l'utilisateur et charger le personnage suivant
+    function recordChoice(choiceType) {
+      const charId = document.getElementById('characterImg').dataset.id;
+      const charName = document.getElementById('characterName').textContent;
+      const imgSrc = document.getElementById('characterImg').src;
+      if (!charId) {
+        alert("Erreur: aucun personnage chargé.");
+        return;
+      }
+      choices[choiceType].push({ id: charId, name: charName, image_url: imgSrc });
+      currentRound++;
+      loadCharacter();
+    }
+
+    // Fonction pour afficher les résultats
+    function showResults() {
+      document.getElementById('gameView').classList.add('hidden');
+      document.getElementById('resultView').classList.remove('hidden');
+      displayResults('passColumn', choices.pass);
+      displayResults('smashColumn', choices.smash);
+      displayResults('ultraColumn', choices.ultraSmash);
+    }
+
+    // Fonction pour afficher les résultats dans une colonne
+    function displayResults(columnId, characters) {
+      const column = document.getElementById(columnId);
+      if (!characters || characters.length === 0) {
+        const noResult = document.createElement('p');
+        noResult.textContent = 'Aucun résultat';
+        noResult.style.textAlign = 'center';
+        column.appendChild(noResult);
+        return;
+      }
+      characters.forEach(character => {
+        const item = document.createElement('div');
+        item.classList.add('result-item');
+        const img = document.createElement('img');
+        img.src = character.image_url;
+        img.alt = character.name;
+        const name = document.createElement('p');
+        name.textContent = character.name;
+        item.appendChild(img);
+        item.appendChild(name);
+        column.appendChild(item);
+      });
+    }
+
+    // Fonction pour redémarrer le jeu
+    function restartGame() {
+      currentRound = 1;
+      preference = '';
+      choices.pass = [];
+      choices.smash = [];
+      choices.ultraSmash = [];
+      // Réinitialiser les vues
+      document.getElementById('resultView').classList.add('hidden');
+      document.getElementById('passColumn').innerHTML = '<h2>Pass</h2>';
+      document.getElementById('smashColumn').innerHTML = '<h2>Smash</h2>';
+      document.getElementById('ultraColumn').innerHTML = '<h2>Ultra Smash</h2>';
+      document.getElementById('selectView').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
+1~	<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Smash or Pass - Jeu Unique</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Global Styles */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: radial-gradient(circle, #0f0f0f, #050505);
+      color: white;
+      overflow-x: hidden;
+    }
+    .hidden { display: none; }
+    /* Background grid animation */
+    .background-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.05) 1px,
+          transparent 1px,
+          transparent 50px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.05) 1px,
+          transparent 1px,
+          transparent 50px
+        );
+      animation: gridAnimation 10s linear infinite;
+      z-index: -1;
+    }
+    @keyframes gridAnimation {
+      from { transform: translate(0,0); }
+      to { transform: translate(-50px,-50px); }
+    }
+    /* Selection View */
+    .select-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .select-container h1 {
+      font-size: 3em;
+      margin-bottom: 40px;
+      color: #ffffff;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .pref-button {
+      font-size: 1.5em;
+      font-weight: bold;
+      padding: 20px 40px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      text-transform: uppercase;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .pref-button.male { background: linear-gradient(135deg, #4444ff, #8888ff); }
+    .pref-button.female { background: linear-gradient(135deg, #ff44aa, #ff88cc); }
+    .pref-button.all { background: linear-gradient(135deg, #ff8844, #ffcc88); }
+    .pref-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+    }
+    /* Game View */
+    .game-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .game-title {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+    .character-image {
+      width: 100%;
+      max-width: 700px;
+      min-width: 300px;
+      max-height: 900px;
+      overflow: hidden;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      margin-bottom: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .character-image img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 15px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .character-name {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .action-buttons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .action-button {
+      font-size: 1.4em;
+      font-weight: bold;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-transform: uppercase;
+      color: black;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .action-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+    }
+    .btn-pass { background: linear-gradient(135deg, #ff4444, #ff8888); }
+    .btn-smash { background: linear-gradient(135deg, #44ff44, #88ff88); }
+    .btn-ultra { background: linear-gradient(135deg, #4444ff, #8888ff); }
+    /* Result View */
+    .result-container {
+      min-height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+    .result-title {
+      font-size: 3em;
+      margin-bottom: 30px;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+    .result-columns {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .result-column {
+      flex: 1;
+      min-width: 250px;
+      max-width: 350px;
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .result-column h2 {
+      font-size: 1.5em;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .result-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      background: rgba(255,255,255,0.2);
+      padding: 10px;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+    .result-item:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .result-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-right: 15px;
+      border: 2px solid #ffffff;
+    }
+    .result-item p {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 0;
+    }
+    .restart-button {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ffffff;
+      background: linear-gradient(135deg, #4444ff, #8888ff);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .restart-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+    }
+    @media (max-width: 768px) {
+      .select-container h1 { font-size: 2.5em; }
+      .pref-button { font-size: 1.3em; padding: 18px 36px; }
+      .game-title { font-size: 2em; }
+      .character-name { font-size: 1.5em; }
+      .action-button { font-size: 1.2em; padding: 10px 20px; }
+      .result-title { font-size: 2.5em; }
+      .result-column h2 { font-size: 1.3em; }
+      .result-item p { font-size: 1em; }
+      .restart-button { font-size: 1em; padding: 10px 20px; }
+    }
+    @media (max-width: 480px) {
+      .select-container h1 { font-size: 2em; }
+      .pref-button { font-size: 1.1em; padding: 15px 30px; }
+      .game-title { font-size: 1.8em; }
+      .character-name { font-size: 1.3em; }
+      .action-button { font-size: 1em; padding: 8px 16px; }
+      .result-title { font-size: 2em; }
+      .result-column h2 { font-size: 1.1em; }
+      .result-item img { width: 50px; height: 50px; }
+      .result-item p { font-size: 0.9em; }
+      .restart-button { font-size: 0.9em; padding: 8px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-grid"></div>
+  <!-- Selection View -->
+  <div id="selectView" class="select-container">
+    <h1>Choisissez votre préférence</h1>
+    <div class="button-group">
+      <button class="pref-button male" onclick="startGame('homme')">Homme</button>
+      <button class="pref-button female" onclick="startGame('femme')">Femme</button>
+      <button class="pref-button all" onclick="startGame('tout')">Tout</button>
+    </div>
+  </div>
+  <!-- Game View -->
+  <div id="gameView" class="game-container hidden">
+    <div class="game-title">Smash or Pass</div>
+    <div class="character-image">
+      <img id="characterImg" src="" alt="Character Image" draggable="false" oncontextmenu="return false;">
+    </div>
+    <div class="character-name" id="characterName"></div>
+    <div class="action-buttons">
+      <button class="action-button btn-pass" onclick="recordChoice('pass')">Pass</button>
+      <button class="action-button btn-smash" onclick="recordChoice('smash')">Smash</button>
+      <button class="action-button btn-ultra" onclick="recordChoice('ultraSmash')">Ultra Smash</button>
+    </div>
+    <div id="gameStatus" style="margin-top:20px;"></div>
+  </div>
+  <!-- Result View -->
+  <div id="resultView" class="result-container hidden">
+    <div class="result-title">Résultats</div>
+    <div class="result-columns">
+      <div class="result-column" id="passColumn">
+        <h2>Pass</h2>
+      </div>
+      <div class="result-column" id="smashColumn">
+        <h2>Smash</h2>
+      </div>
+      <div class="result-column" id="ultraColumn">
+        <h2>Ultra Smash</h2>
+      </div>
+    </div>
+    <button class="restart-button" onclick="restartGame()">Recommencer</button>
+  </div>
+
+  <script>
+    // Global variables et configuration
+    let currentRound = 1;
+    const maxRounds = 25;
+    let preference = '';
+    const choices = { pass: [], smash: [], ultraSmash: [] };
+    // Objet pour le cache des images (url -> dataURL)
+    const imageCache = {};
+
+    // Fonction pour récupérer une image en cache (ou la convertir en dataURL)
+    function getCachedImage(url) {
+      return new Promise((resolve, reject) => {
+        if (imageCache[url]) {
+          resolve(imageCache[url]);
+        } else {
+          fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                imageCache[url] = reader.result;
+                resolve(reader.result);
+              };
+              reader.onerror = () => reject("Erreur lors du chargement de l'image.");
+              reader.readAsDataURL(blob);
+            })
+            .catch(err => reject(err));
+        }
+      });
+    }
+
+    // Fonction pour démarrer le jeu avec la préférence sélectionnée
+    function startGame(pref) {
+      preference = pref;
+      document.getElementById('selectView').classList.add('hidden');
+      document.getElementById('gameView').classList.remove('hidden');
+      currentRound = 1;
+      loadCharacter();
+    }
+
+    // Fonction pour charger un personnage depuis le serveur
+    function loadCharacter() {
+      if (currentRound > maxRounds) {
+        showResults();
+        return;
+      }
+      document.getElementById('gameStatus').textContent = `Round ${currentRound} / ${maxRounds}`;
+      fetch(`/get-character?preference=${encodeURIComponent(preference)}`)
+        .then(response => response.json())
+        .then(character => {
+          if (character.error) {
+            alert("Erreur lors du chargement du personnage.");
+            return;
+          }
+          // Charge et cache l'image
+          getCachedImage(character.image_url)
+            .then(dataUrl => {
+              document.getElementById('characterImg').src = dataUrl;
+            })
+            .catch(err => {
+              console.error(err);
+              document.getElementById('characterImg').src = character.image_url;
+            });
+          document.getElementById('characterName').textContent = character.name || "Nom indisponible";
+          document.getElementById('characterImg').dataset.id = character.id;
+        })
+        .catch(err => {
+          console.error("Erreur de fetch:", err);
+          alert("Erreur lors du chargement du personnage.");
+        });
+    }
+
+    // Fonction pour enregistrer le choix de l'utilisateur et charger le personnage suivant
+    function recordChoice(choiceType) {
+      const charId = document.getElementById('characterImg').dataset.id;
+      const charName = document.getElementById('characterName').textContent;
+      const imgSrc = document.getElementById('characterImg').src;
+      if (!charId) {
+        alert("Erreur: aucun personnage chargé.");
+        return;
+      }
+      choices[choiceType].push({ id: charId, name: charName, image_url: imgSrc });
+      currentRound++;
+      loadCharacter();
+    }
+
+    // Fonction pour afficher les résultats
+    function showResults() {
+      document.getElementById('gameView').classList.add('hidden');
+      document.getElementById('resultView').classList.remove('hidden');
+      displayResults('passColumn', choices.pass);
+      displayResults('smashColumn', choices.smash);
+      displayResults('ultraColumn', choices.ultraSmash);
+    }
+
+    // Fonction pour afficher les résultats dans une colonne
+    function displayResults(columnId, characters) {
+      const column = document.getElementById(columnId);
+      if (!characters || characters.length === 0) {
+        const noResult = document.createElement('p');
+        noResult.textContent = 'Aucun résultat';
+        noResult.style.textAlign = 'center';
+        column.appendChild(noResult);
+        return;
+      }
+      characters.forEach(character => {
+        const item = document.createElement('div');
+        item.classList.add('result-item');
+        const img = document.createElement('img');
+        img.src = character.image_url;
+        img.alt = character.name;
+        const name = document.createElement('p');
+        name.textContent = character.name;
+        item.appendChild(img);
+        item.appendChild(name);
+        column.appendChild(item);
+      });
+    }
+
+    // Fonction pour redémarrer le jeu
+    function restartGame() {
+      currentRound = 1;
+      preference = '';
+      choices.pass = [];
+      choices.smash = [];
+      choices.ultraSmash = [];
+      // Réinitialiser les vues
+      document.getElementById('resultView').classList.add('hidden');
+      document.getElementById('passColumn').innerHTML = '<h2>Pass</h2>';
+      document.getElementById('smashColumn').innerHTML = '<h2>Smash</h2>';
+      document.getElementById('ultraColumn').innerHTML = '<h2>Ultra Smash</h2>';
+      document.getElementById('selectView').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
+

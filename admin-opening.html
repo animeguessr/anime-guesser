@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Ajout d'un Opening</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #f4f4f4;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+    }
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 0.5rem;
+      box-sizing: border-box;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    input[type="file"] {
+      padding: 0.5rem 0;
+    }
+    button {
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      cursor: pointer;
+      font-size: 1rem;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #555;
+    }
+    .message {
+      margin: 1rem 0;
+      text-align: center;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+    /* Progress bar */
+    #progressContainer {
+      width: 100%;
+      background: #e0e0e0;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      display: none; /* Caché par défaut */
+      margin-top: 1rem;
+    }
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: #76c7c0; /* Couleur de progression */
+      transition: width 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Panel Admin - Ajout d'un Opening</h2>
+  </header>
+
+  <main>
+    <h1>Ajouter un nouvel Opening</h1>
+    <form id="openingForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="animeName">Nom de l'animé :</label>
+        <input type="text" id="animeName" name="animeName" required />
+      </div>
+
+      <div class="form-group">
+        <label for="opName">Nom de l'opening :</label>
+        <input type="text" id="opName" name="opName" required />
+      </div>
+
+      <div class="form-group">
+        <label for="youtubeViews">Nombre de vues YouTube :</label>
+        <input type="number" id="youtubeViews" name="youtubeViews" min="0" required />
+      </div>
+
+      <div class="form-group">
+        <label for="diff">Difficulté :</label>
+        <select id="diff" name="diff" required>
+          <option value="1">Facile (1)</option>
+          <option value="2">Normal (2)</option>
+          <option value="3">Difficile (3)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="openingFile">Fichier vidéo de l'opening (max 150Mo) :</label>
+        <!-- On limite au niveau HTML aux formats vidéo -->
+        <input
+          type="file"
+          id="openingFile"
+          name="openingFile"
+          accept="video/webm,video/mp4,video/x-matroska"
+          required
+        />
+      </div>
+
+      <!-- Barre de progression -->
+      <div id="progressContainer">
+        <div id="progressBar"></div>
+      </div>
+
+      <button type="submit">Ajouter l'Opening</button>
+    </form>
+
+    <div id="message" class="message"></div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const openingForm = document.getElementById('openingForm');
+      const messageDiv = document.getElementById('message');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+
+      openingForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        messageDiv.textContent = '';
+        messageDiv.className = 'message';
+
+        // Affiche la barre de progression
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+
+        const formData = new FormData(openingForm);
+
+        // Utilisation de l'API XMLHttpRequest pour le suivi de progression
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/add-opening', true);
+
+        // Quand on reçoit la réponse
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            try {
+              const result = JSON.parse(xhr.responseText);
+              if (result.success) {
+                messageDiv.textContent = result.message || 'Opening ajouté avec succès !';
+                messageDiv.classList.add('success');
+                openingForm.reset();
+                // Réinitialiser la barre de progression
+                progressBar.style.width = '0%';
+              } else {
+                throw new Error(result.error || 'Erreur lors de l\'ajout.');
+              }
+            } catch (err) {
+              messageDiv.textContent = err.message;
+              messageDiv.classList.add('error');
+            }
+          } else {
+            // Erreur HTTP (404, 500, etc.)
+            messageDiv.textContent = `Erreur serveur (status ${xhr.status}).`;
+            messageDiv.classList.add('error');
+          }
+        };
+
+        // Gérer les erreurs "runtime"
+        xhr.onerror = function () {
+          messageDiv.textContent = 'Erreur réseau / requête interrompue.';
+          messageDiv.classList.add('error');
+        };
+
+        // Suivre la progression de l'upload
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100;
+            progressBar.style.width = `${percent.toFixed(2)}%`;
+          }
+        };
+
+        xhr.send(formData);
+      });
+    });
+  </script>
+</body>
+</html>
+

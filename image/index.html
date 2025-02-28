@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Validation d'Images d'Animés</title>
+    <!-- Importation de la police depuis Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
+    <style>
+        /* Réinitialisation des marges et des paddings par défaut */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Styles généraux */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .anime-title {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #ff6b81;
+        }
+
+        /* Styles pour l'image */
+        .image-container {
+            position: relative;
+            margin-bottom: 40px;
+        }
+        .image-container img {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border: 5px solid #ff6b81;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Styles pour les boutons */
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        .buttons button {
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #2d2d2d;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .buttons button:hover {
+            background-color: #ff6b81;
+        }
+        .buttons .delete {
+            background-color: #ff4757;
+        }
+        .buttons .delete:hover {
+            background-color: #e84118;
+        }
+        .buttons .next {
+            background-color: #3742fa;
+        }
+        .buttons .next:hover {
+            background-color: #2f3542;
+        }
+
+        /* Style pour les notifications */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #2d2d2d;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="anime-title">Nom de l'Animé</h1>
+        <div class="image-container" id="image-container">
+            <!-- L'image sera insérée ici -->
+        </div>
+        <div class="buttons">
+            <button onclick="setDifficulty(1)">Difficulté 1</button>
+            <button onclick="setDifficulty(2)">Difficulté 2</button>
+            <button onclick="setDifficulty(3)">Difficulté 3</button>
+            <button onclick="setDifficulty(4)">Difficulté 4</button>
+            <button class="delete" onclick="deleteImage()">Supprimer</button>
+            <button class="next" onclick="nextAnime()">Prochain animé</button>
+        </div>
+    </div>
+
+    <!-- Notification pour les messages -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        let currentAnimeIndex = 0;
+        let currentImageIndex = 0;
+        let animeList = [];
+        let images = [];
+
+        // Fonction pour afficher une notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Charger la liste des animés
+        async function loadAnimeList() {
+            try {
+                const response = await fetch('/list');
+                const data = await response.json();
+                if (data.success) {
+                    animeList = data.animés;
+                    loadImagesForAnime();
+                } else {
+                    console.error("Erreur lors du chargement de la liste des animés.");
+                }
+            } catch (error) {
+                console.error("Erreur réseau :", error);
+            }
+        }
+
+        // Charger les images pour un animé
+        async function loadImagesForAnime() {
+            if (currentAnimeIndex >= animeList.length) {
+                showNotification("Tous les animés ont été traités !");
+                return;
+            }
+
+            const animeName = animeList[currentAnimeIndex];
+            document.querySelector(".anime-title").textContent = animeName;
+
+            try {
+                const response = await fetch(`/images/${encodeURIComponent(animeName)}`);
+                const data = await response.json();
+                if (data.success) {
+                    images = data.images;
+                    currentImageIndex = 0;
+                    displayImage();
+                } else {
+                    console.error("Erreur lors du chargement des images pour l'animé :", animeName);
+                }
+            } catch (error) {
+                console.error("Erreur réseau :", error);
+            }
+        }
+
+        // Afficher une image
+        function displayImage() {
+            const imageContainer = document.getElementById("image-container");
+            imageContainer.innerHTML = "";
+
+            if (currentImageIndex < images.length) {
+                const imgElement = document.createElement("img");
+                imgElement.src = `/images/${encodeURIComponent(animeList[currentAnimeIndex])}/${encodeURIComponent(images[currentImageIndex])}`;
+                imageContainer.appendChild(imgElement);
+            } else {
+                showNotification("Toutes les images de cet animé ont été traitées !");
+                nextAnime();
+            }
+        }
+
+        // Définir une difficulté
+        async function setDifficulty(difficulty) {
+            if (currentImageIndex >= images.length) {
+                showNotification("Aucune image à traiter.");
+                return;
+            }
+
+            const animeName = animeList[currentAnimeIndex];
+            const imageName = images[currentImageIndex];
+
+            try {
+                const response = await fetch('/set-difficulty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ animeName, imageName, difficulty })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification(`Difficulté ${difficulty} attribuée à l'image.`);
+                    currentImageIndex++;
+                    displayImage();
+                } else {
+                    console.error("Erreur lors de l'attribution de la difficulté.");
+                }
+            } catch (error) {
+                console.error("Erreur réseau :", error);
+            }
+        }
+
+        // Supprimer une image
+        async function deleteImage() {
+            if (currentImageIndex >= images.length) {
+                showNotification("Aucune image à traiter.");
+                return;
+            }
+
+            const animeName = animeList[currentAnimeIndex];
+            const imageName = images[currentImageIndex];
+
+            try {
+                const response = await fetch('/delete-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ animeName, imageName })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification(`Image supprimée.`);
+                    currentImageIndex++;
+                    displayImage();
+                } else {
+                    console.error("Erreur lors de la suppression de l'image.");
+                }
+            } catch (error) {
+                console.error("Erreur réseau :", error);
+            }
+        }
+
+        // Passer au prochain animé
+        function nextAnime() {
+            currentAnimeIndex++;
+            loadImagesForAnime();
+        }
+
+        // Charger la liste des animés au démarrage
+        loadAnimeList();
+    </script>
+</body>
+</html>

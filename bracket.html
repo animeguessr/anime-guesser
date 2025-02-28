@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tournoi Anime / Personnage</title>
+  <style>
+    /* Global Styles */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #1a1c23;
+      color: #d1d1d1;
+      text-align: center;
+    }
+    header {
+      background-color: #222636;
+      color: #ffffff;
+      padding: 20px;
+    }
+    main {
+      padding: 20px;
+    }
+    /* Sélection initiale */
+    #roundSelection {
+      margin-bottom: 30px;
+    }
+    #roundSelection select,
+    #roundSelection button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin: 5px;
+      border: 1px solid #3b3f4e;
+      border-radius: 5px;
+      background-color: #2d3038;
+      color: #d1d1d1;
+      cursor: pointer;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+    #roundSelection button:hover {
+      background-color: #444b5d;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    /* Infos de match */
+    .match-info {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #e5e5e5;
+    }
+    /* Conteneur pour chaque match */
+    .match {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin: 20px auto;
+      max-width: 1000px;
+    }
+    /* Carte d'un participant */
+    .anime {
+      background: #2d3038;
+      border: 2px solid #3b3f4e;
+      border-radius: 10px;
+      padding: 15px;
+      cursor: pointer;
+      flex: 1 1 40%;
+      margin: 0 10px;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .anime:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      border-color: #2a2f42;
+    }
+    .anime h3 {
+      font-size: 18px;
+      margin: 10px 0;
+      color: #e5e5e5;
+    }
+    .anime img {
+      width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      border-radius: 8px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .anime a {
+      font-size: 14px;
+      color: #aab0c6;
+      text-decoration: none;
+      margin-top: 5px;
+    }
+    .anime a:hover {
+      text-decoration: underline;
+      color: #d1d1d1;
+    }
+    /* Affichage du vainqueur */
+    .winner {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #2d3038;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .winner h2 {
+      color: #e5e5e5;
+    }
+    .winner img {
+      width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      border-radius: 8px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    /* Bouton Rejouer */
+    #replayButton {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin-top: 20px;
+      border: 1px solid #3b3f4e;
+      border-radius: 5px;
+      background-color: #2d3038;
+      color: #d1d1d1;
+      cursor: pointer;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+    #replayButton:hover {
+      background-color: #444b5d;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .match {
+        flex-direction: column;
+      }
+      .anime {
+        width: 80%;
+        margin: 10px auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tournoi Anime / Personnage</h1>
+  </header>
+  <main>
+    <div id="roundSelection">
+      <label for="tournamentType">Type de tournoi :</label>
+      <select id="tournamentType">
+        <option value="anime">Anime</option>
+        <option value="character">Personnage</option>
+      </select>
+      <br>
+      <label for="rounds">Nombre de participants (puissance de 2) :</label>
+      <select id="rounds">
+        <option value="8">8</option>
+        <option value="16">16</option>
+        <option value="32">32</option>
+        <option value="128">128</option>
+      </select>
+      <button id="start">Démarrer le tournoi</button>
+    </div>
+    
+    <div class="match-info" id="matchInfo"></div>
+    <div id="tournament"></div>
+  </main>
+  
+  <script>
+    let participants = [];
+    let initialCount = 0;
+    let matchCounter = 0;
+    let totalMatches = 0;
+    let currentTournamentType = 'anime';
+    
+    document.getElementById('start').addEventListener('click', async () => {
+      const rounds = document.getElementById('rounds').value;
+      currentTournamentType = document.getElementById('tournamentType').value;
+      document.getElementById('roundSelection').style.display = 'none';
+      // L'API reçoit désormais le paramètre "type" pour sélectionner le bon dataset
+      const res = await fetch(`/api/bracket?type=${currentTournamentType}&rounds=${rounds}`);
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      participants = data.participants;
+      initialCount = participants.length;
+      totalMatches = initialCount - 1;
+      matchCounter = 0;
+      startRound(participants);
+    });
+    
+    // Convertit l'URL en retirant "/anime-guesser" et en ajoutant le domaine complet
+    function getFullImageUrl(url) {
+      if (url.startsWith('http')) return url;
+      const prefixToRemove = '/anime-guesser';
+      if (url.startsWith(prefixToRemove)) {
+        url = url.slice(prefixToRemove.length);
+      }
+      return 'https://anime-guessr.freeboxos.fr' + url;
+    }
+    
+    function startRound(list) {
+      renderMatches(list);
+    }
+    
+    function renderMatches(roundParticipants) {
+      const tournamentDiv = document.getElementById('tournament');
+      const matchInfo = document.getElementById('matchInfo');
+    
+      // Si un seul participant reste, afficher le vainqueur et le bouton rejouer
+      if (roundParticipants.length === 1) {
+        matchInfo.textContent = '';
+        const displayName = currentTournamentType === 'character' ? roundParticipants[0].name : roundParticipants[0].title;
+        const extraInfo = currentTournamentType === 'character' && roundParticipants[0].character_url 
+          ? `<a href="${roundParticipants[0].character_url}" target="_blank">Voir le personnage</a>`
+          : '';
+        tournamentDiv.innerHTML = `
+          <div class="winner">
+            <h2>Le vainqueur est : ${displayName}</h2>
+            <img src="${getFullImageUrl(roundParticipants[0].image_url)}" alt="${displayName}" draggable="false" oncontextmenu="return false;">
+            ${extraInfo}
+            <br>
+            <button id="replayButton">Rejouer</button>
+          </div>`;
+        document.getElementById('replayButton').addEventListener('click', () => location.reload());
+        return;
+      }
+    
+      matchInfo.textContent = `Match ${matchCounter + 1} sur ${totalMatches}`;
+    
+      const matches = [];
+      for (let i = 0; i < roundParticipants.length; i += 2) {
+        matches.push([roundParticipants[i], roundParticipants[i+1]]);
+      }
+      let matchIndex = 0;
+      const roundWinners = [];
+    
+      function showNextMatch() {
+        matchInfo.textContent = `Match ${matchCounter + 1} sur ${totalMatches}`;
+        if (matchIndex >= matches.length) {
+          renderMatches(roundWinners);
+          return;
+        }
+        tournamentDiv.innerHTML = '';
+        const match = matches[matchIndex];
+        const matchDiv = document.createElement('div');
+        matchDiv.className = 'match';
+        match.forEach(participant => {
+          const displayName = currentTournamentType === 'character' ? participant.name : participant.title;
+          const extraLink = currentTournamentType === 'character' && participant.character_url 
+            ? `<a href="${participant.character_url}" target="_blank">Voir le perso</a>` 
+            : '';
+    
+          const cardDiv = document.createElement('div');
+          cardDiv.className = 'anime';
+          cardDiv.innerHTML = `
+            <h3>${displayName}</h3>
+            <img src="${getFullImageUrl(participant.image_url)}" alt="${displayName}" draggable="false" oncontextmenu="return false;">
+            ${extraLink}
+          `;
+          cardDiv.addEventListener('click', () => {
+            roundWinners.push(participant);
+            matchCounter++;
+            matchIndex++;
+            showNextMatch();
+          });
+          matchDiv.appendChild(cardDiv);
+        });
+        tournamentDiv.appendChild(matchDiv);
+      }
+      showNextMatch();
+    }
+  </script>
+</body>
+</html>

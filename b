@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Opening guesser (Multijoueurs & Solo)</title>
+  <style>
+    /* RESET */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364);
+      background-size: 600% 600%;
+      animation: gradientAnimation 15s ease infinite;
+      color: #f0f0f0;
+      min-height: 100vh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 3.2rem;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .section {
+      width: 90%;
+      max-width: 1100px;
+      margin: 0 auto 40px auto;
+    }
+    #roomSelection input,
+    #roomSelection select {
+      width: calc(100% - 20px);
+      padding: 15px;
+      margin: 10px 0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(44, 62, 80, 0.75);
+      color: #ecf0f1;
+      font-size: 1.2rem;
+      outline: none;
+    }
+    #roomSelection input::placeholder {
+      color: rgba(236, 240, 241, 0.7);
+    }
+
+    button {
+      font-family: 'Roboto', sans-serif;
+      display: inline-block;
+      padding: 12px 25px;
+      margin: 10px 5px 0 5px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+      background: linear-gradient(45deg, #ff6b6b, #f06595);
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(45deg, #f06595, #ff6b6b);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+    }
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    button:focus {
+      outline: 2px dashed #ffffff;
+      outline-offset: 4px;
+    }
+    #startGameButton {
+      background: #e74c3c;
+    }
+    #startGameButton:hover:not(:disabled) {
+      background: #c0392b;
+    }
+    .hint-button {
+      background: linear-gradient(45deg, #48c6ef, #6f86d6);
+      border-radius: 25px;
+    }
+    .hint-button:hover:not(:disabled) {
+      background: linear-gradient(45deg, #6f86d6, #48c6ef);
+    }
+    #lobby .player-list {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+    #lobby .player-list li {
+      background: rgba(52, 73, 94, 0.7);
+      padding: 15px;
+      margin: 5px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+    #gameArea {
+      margin-top: 20px;
+    }
+    #statusMessage {
+      margin-bottom: 20px;
+      font-size: 1.4rem;
+    }
+    .player audio,
+    .player video {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+    .video-player.hidden {
+      display: none;
+    }
+    .autocomplete {
+      position: relative;
+      width: calc(100% - 20px);
+      margin: 20px auto;
+    }
+    .autocomplete input {
+      padding: 15px;
+      width: 100%;
+      border-radius: 8px;
+      background: rgba(44, 62, 80, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 1.2rem;
+      color: #ecf0f1;
+      outline: none;
+    }
+    .autocomplete-items {
+      position: absolute;
+      left: 0; right: 0;
+      background: rgba(44, 62, 80, 0.95);
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 10;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.7);
+    }
+    .autocomplete-items div {
+      padding: 15px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-size: 1.2rem;
+      color: #ecf0f1;
+    }
+    .autocomplete-items div:hover {
+      background: #34495e;
+    }
+    .autocomplete-active {
+      background: #34495e;
+    }
+    #timer {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 30px;
+      color: #f1c40f;
+    }
+    .scoreboard {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(5px);
+      border-radius: 8px;
+      padding: 15px;
+      width: 300px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+    }
+    .scoreboard h2 {
+      margin-bottom: 10px;
+      font-size: 1.4rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .scoreboard table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .scoreboard th,
+    .scoreboard td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: left;
+      font-size: 1rem;
+      color: #ecf0f1;
+    }
+    .scoreboard tr:last-child td {
+      border-bottom: none;
+    }
+    .popup.hidden {
+      display: none;
+    }
+    .popup {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(20, 30, 48, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .popup-content {
+      background: #2c3e50;
+      padding: 40px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+      max-width: 500px;
+      width: 90%;
+    }
+    .popup-content h2 {
+      margin-bottom: 20px;
+    }
+    .popup-content p,
+    .popup-content ul {
+      color: #bdc3c7;
+      margin-bottom: 20px;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- SCOREBOARD -->
+  <div class="scoreboard" id="scoreboard">
+    <h2>Classement</h2>
+    <table>
+      <thead>
+        <tr><th>Joueur</th><th>Score</th></tr>
+      </thead>
+      <tbody id="scoresTableBody"></tbody>
+    </table>
+  </div>
+
+  <h1>AnimeGuess Multiplayer</h1>
+
+  <!-- SECTION DE CREATION/REJOINTE DE ROOM -->
+  <div id="roomSelection" class="section">
+    <input type="text" id="playerNameInput" placeholder="Votre nom">
+    <input type="text" id="roomInput" placeholder="Nom de la room">
+    <select id="difficultySelect">
+      <option value="easy">Facile</option>
+      <option value="normal">Normal</option>
+      <option value="hard">Difficile</option>
+    </select>
+    <div>
+      <button onclick="createRoom()">Créer une room</button>
+      <button onclick="joinRoom()">Rejoindre une room</button>
+    </div>
+    <div id="roomStatus" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="lobby" class="section hidden">
+    <h2>Lobby</h2>
+    <ul class="player-list" id="playerList"></ul>
+    <button onclick="startGame()" id="startGameButton" disabled>Commencer le Jeu</button>
+  </div>
+
+  <!-- ZONE DE JEU -->
+  <div id="gameArea" class="section hidden">
+    <div id="statusMessage">En attente du début du jeu...</div>
+    
+    <div class="player">
+      <audio controls id="audio">
+        <source src="" type="audio/mp4">
+        Votre navigateur ne supporte pas la lecture de l'audio.
+      </audio>
+    </div>
+    <div class="player video-player hidden">
+      <div id="video-container">
+        <video id="video">
+          <source src="" type="video/mp4">
+          Votre navigateur ne supporte pas la lecture de vidéos.
+        </video>
+      </div>
+      <div class="custom-controls">
+        <button id="playPauseButton">Lecture</button>
+        <button id="fullscreenButton">Plein écran</button>
+      </div>
+    </div>
+
+    <div class="autocomplete">
+      <input id="animeInput" type="text" placeholder="Devinez l'animé..." disabled>
+    </div>
+    <div class="buttons">
+      <button onclick="submitAnswer()" disabled>Valider</button>
+      <button onclick="skipAnswer()" disabled>Je ne sais pas</button>
+      <button onclick="unlockVideo()" disabled class="hint-button">Débloquer la vidéo</button>
+      <button onclick="deflouterVideo()" disabled class="hint-button">Déflouter la vidéo</button>
+    </div>
+    <p id="result"></p>
+
+    <div class="timer hidden" id="timer">
+      Temps restant : <span id="timeLeft">60</span> secondes
+    </div>
+  </div>
+
+  <!-- POPUP FIN DE JEU -->
+  <div id="endPopup" class="popup hidden">
+    <div class="popup-content">
+      <h2>Quiz Terminé !</h2>
+      <p>Félicitations à <span id="winnerName" style="color:#fff;font-weight:600;"></span> !</p>
+      <ul id="finalScores"></ul>
+      <button onclick="restartQuiz()">Recommencer</button>
+      <button onclick="goToMenu()">Retour à l'accueil</button>
+    </div>
+  </div>
+
+<script>
+  // ===================== VARIABLES GLOBALES =====================
+  let socket;
+  let playerName = '';
+  let currentRoom = '';
+  let isChef = false;
+
+  // Liste des joueurs et scores
+  let players = [];
+  let scores = {};
+
+  // Données anime (pour la difficulté choisie)
+  let animeData = [];
+
+  // Timer
+  let timerInterval = null;
+  let timeLeft = 60;
+
+  // ===================== CHARGEMENT PAGE =====================
+  document.addEventListener('DOMContentLoaded', async function() {
+    // 1) On récupère la liste d'animes pour la difficulté par défaut (easy)
+    await loadAnimeData();
+
+    // 2) On écoute le changement de difficulté => re-fetch
+    const difficultySelect = document.getElementById('difficultySelect');
+    difficultySelect.addEventListener('change', async function() {
+      await loadAnimeData();
+    });
+
+    // 3) Lancement WebSocket
+    startWebSocket();
+  });
+
+  // ===================== FONCTION LOAD ANIME =====================
+  async function loadAnimeData() {
+    const difficultySelect = document.getElementById('difficultySelect');
+    const selectedDiff = difficultySelect ? difficultySelect.value : 'easy';
+
+    console.log("Fetching /anime?difficulty=", selectedDiff);
+    try {
+      const response = await fetch(`/anime?difficulty=${selectedDiff}`);
+      if (!response.ok) {
+        console.error("Réponse non OK :", response.status);
+        return;
+      }
+      animeData = await response.json();
+
+      // Petit debug
+      console.log("Données reçues =", animeData);
+
+      // On mélange
+      shuffleArray(animeData);
+
+      // On active l'autocomplétion
+      const animeInput = document.getElementById('animeInput');
+      if (animeInput) {
+        autocomplete(animeInput, animeData);
+      }
+    } catch (error) {
+      console.error("Erreur fetch animeData :", error);
+    }
+  }
+
+  // ===================== WEBSOCKET =====================
+  function startWebSocket() {
+    socket = new WebSocket("wss://anime-guessr.freeboxos.fr");
+
+    socket.onopen = () => {
+      console.log("WebSocket connecté");
+      displayStatus("Connecté au serveur.");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      switch (data.type) {
+        case "roomCreated":
+          currentRoom = data.room;
+          isChef = true;
+          document.getElementById('roomSelection').classList.add('hidden');
+          document.getElementById('lobby').classList.remove('hidden');
+          document.getElementById('startGameButton').disabled = false;
+          displayStatus(`Room "${data.room}" créée !`);
+          break;
+
+        case "roomJoined":
+          currentRoom = data.room;
+          isChef = false;
+          document.getElementById('roomSelection').classList.add('hidden');
+          document.getElementById('lobby').classList.remove('hidden');
+          document.getElementById('startGameButton').disabled = true;
+          displayStatus(`Rejoint la room "${data.room}" !`);
+          break;
+
+        case "playerListUpdate":
+          players = data.players;
+          scores = data.scores;
+          renderPlayerList();
+          renderScores();
+          break;
+
+        case "playerJoined":
+          updateStatus(`${data.player} a rejoint la room.`);
+          break;
+
+        case "playerLeft":
+          updateStatus(`${data.player} a quitté la room.`);
+          break;
+
+        case "newChef":
+          isChef = true;
+          document.getElementById('startGameButton').disabled = false;
+          updateStatus("Vous êtes le nouveau chef.");
+          break;
+
+        case "newChefAnnouncement":
+          updateStatus(data.message);
+          break;
+
+        case "startGame":
+          // On passe au jeu
+          document.getElementById('lobby').classList.add('hidden');
+          document.getElementById('gameArea').classList.remove('hidden');
+          activateGameButtons();
+          document.getElementById('animeInput').disabled = false;
+          document.getElementById('timer').classList.remove('hidden');
+          startTimer();
+          updateStatus(`Le jeu commence ! Round : ${data.round}`);
+
+          // Le chef envoie la première question
+          if (isChef) {
+            sendNewQuestion();
+          }
+          break;
+
+        case "newQuestion":
+          displayQuestion(data.question);
+          resetTimer();
+          startTimer();
+          break;
+
+        case "scoreUpdate":
+          scores = data.scores;
+          renderScores();
+          break;
+
+        case "roundEnded":
+          updateStatus(data.message);
+          document.getElementById('result').textContent = data.message;
+          break;
+
+        case "playerSkip":
+          updateStatus(data.message);
+          break;
+
+        case "hintAvailable":
+          manageHintAvailability(data.hint);
+          break;
+
+        case "hintUsed":
+          disableUsedHint(data.hint);
+          document.getElementById('result').textContent = data.message;
+          break;
+
+        case "answerResult":
+          document.getElementById('result').textContent = data.message;
+          break;
+
+        case "roundWinner":
+          updateStatus(`${data.winner} remporte ce round.`);
+          break;
+
+        case "gameOver":
+          displayGameOver(data.finalScores);
+          break;
+
+        case "statusUpdate":
+          updateStatus(data.message);
+          break;
+
+        case "error":
+          displayStatus(`Erreur : ${data.message}`);
+          break;
+
+        default:
+          console.log("Type de message inconnu :", data);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket déconnecté");
+      updateStatus("Connexion perdue...");
+    };
+
+    socket.onerror = (err) => {
+      console.error("WS error :", err);
+    };
+  }
+
+  // ===================== ROOM MANAGEMENT =====================
+  function createRoom() {
+    const name = document.getElementById('playerNameInput').value.trim();
+    const room = document.getElementById('roomInput').value.trim();
+    const difficulty = document.getElementById('difficultySelect').value;
+
+    if (!name)  return displayStatus("Veuillez entrer votre nom.");
+    if (!room)  return displayStatus("Veuillez entrer un nom de room.");
+
+    playerName = name;
+    currentRoom = room;
+    isChef = true;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return displayStatus("Connexion WebSocket pas encore prête...");
+    }
+
+    socket.send(JSON.stringify({
+      type: "createRoom",
+      room: room,
+      player: name,
+      difficulty: difficulty
+    }));
+  }
+
+  function joinRoom() {
+    const name = document.getElementById('playerNameInput').value.trim();
+    const room = document.getElementById('roomInput').value.trim();
+
+    if (!name) return displayStatus("Veuillez entrer votre nom.");
+    if (!room) return displayStatus("Veuillez entrer un nom de room.");
+
+    playerName = name;
+    currentRoom = room;
+    isChef = false;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return displayStatus("Connexion WebSocket pas encore prête...");
+    }
+
+    socket.send(JSON.stringify({
+      type: "joinRoom",
+      room: room,
+      player: name
+    }));
+  }
+
+  function startGame() {
+    if (!isChef) {
+      return displayStatus("Seul le chef peut démarrer le jeu.");
+    }
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return displayStatus("WebSocket non connectée.");
+    }
+    socket.send(JSON.stringify({
+      type: "startGame",
+      room: currentRoom
+    }));
+  }
+
+  // ===================== LOGIQUE DES QUESTIONS =====================
+  function sendNewQuestion() {
+    // Si plus d'animes, fin
+    if (animeData.length === 0) {
+      updateStatus("Il n'y a plus d'openings à deviner.");
+      // eventuellement un message gameOver
+      /*
+      socket.send(JSON.stringify({
+        type: "gameOver",
+        room: currentRoom,
+        finalScores: scores
+      }));
+      */
+      return;
+    }
+    // On pioche le premier
+    const question = animeData.shift();
+    // On l'envoie aux joueurs
+    socket.send(JSON.stringify({
+      type: "newQuestion",
+      room: currentRoom,
+      question: question
+    }));
+  }
+
+  // ===================== AFFICHE QUESTIONS =====================
+  function displayQuestion(question) {
+    document.getElementById('result').textContent = '';
+    document.getElementById('animeInput').value = '';
+    document.querySelector('.video-player').classList.add('hidden');
+
+    const videoElement = document.getElementById('video');
+    videoElement.style.filter = 'blur(10px)';
+    videoElement.pause();
+    document.getElementById('playPauseButton').textContent = 'Lecture';
+
+    disableUsedHint(1);
+    disableUsedHint(2);
+
+    const audioElement = document.getElementById('audio');
+    audioElement.src = `/media/${question.id}`;
+    videoElement.src = `/media/${question.id}`;
+
+    audioElement.currentTime = 0;
+    audioElement.play();
+  }
+
+  // ===================== REPONSES / INDICES =====================
+  function submitAnswer() {
+    const userInput = document.getElementById('animeInput').value.trim();
+    if (!userInput) {
+      document.getElementById('result').textContent = "Veuillez entrer une réponse, ou cliquer sur 'Je ne sais pas'.";
+      return;
+    }
+    socket.send(JSON.stringify({
+      type: "submitAnswer",
+      room: currentRoom,
+      answer: userInput
+    }));
+  }
+
+  function skipAnswer() {
+    socket.send(JSON.stringify({
+      type: "submitAnswer",
+      room: currentRoom,
+      answer: "" // skip
+    }));
+  }
+
+  function unlockVideo() {
+    socket.send(JSON.stringify({
+      type: "useHint",
+      room: currentRoom,
+      hint: 1
+    }));
+    document.getElementById('audio').pause();
+    const videoDiv = document.querySelector('.video-player');
+    videoDiv.classList.remove('hidden');
+    const videoElement = document.getElementById('video');
+    videoElement.currentTime = 0;
+    videoElement.play();
+    document.getElementById('playPauseButton').textContent = 'Pause';
+  }
+
+  function deflouterVideo() {
+    socket.send(JSON.stringify({
+      type: "useHint",
+      room: currentRoom,
+      hint: 2
+    }));
+    document.getElementById('video').style.filter = 'none';
+  }
+
+  function manageHintAvailability(hint) {
+    const btns = document.querySelectorAll('.buttons button');
+    // => 0:Valider, 1:JeNeSaisPas, 2:unlockVideo, 3:deflouterVideo
+    if (hint === 1) btns[2].disabled = false;
+    if (hint === 2) btns[3].disabled = false;
+  }
+
+  function disableUsedHint(hint) {
+    const btns = document.querySelectorAll('.buttons button');
+    if (hint === 1) btns[2].disabled = true;
+    if (hint === 2) btns[3].disabled = true;
+  }
+
+  // ===================== TIMER =====================
+  function startTimer() {
+    timeLeft = 60;
+    document.getElementById('timeLeft').innerText = timeLeft;
+    document.getElementById('timer').classList.remove('hidden');
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('timeLeft').innerText = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+      }
+    }, 1000);
+  }
+  function resetTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+    timeLeft = 60;
+    document.getElementById('timeLeft').innerText = timeLeft;
+    document.getElementById('timer').classList.add('hidden');
+  }
+
+  // ===================== VIDEO CONTROLS =====================
+  document.getElementById('playPauseButton')?.addEventListener('click', function() {
+    const video = document.getElementById('video');
+    if (video.paused) {
+      video.play();
+      this.textContent = 'Pause';
+    } else {
+      video.pause();
+      this.textContent = 'Lecture';
+    }
+  });
+
+  document.getElementById('fullscreenButton')?.addEventListener('click', function() {
+    const video = document.getElementById('video');
+    if (video.requestFullscreen)        video.requestFullscreen();
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+    else if (video.msRequestFullscreen)     video.msRequestFullscreen();
+  });
+
+  // ===================== FIN DE PARTIE =====================
+  function displayGameOver(finalScores) {
+    document.getElementById('gameArea').classList.add('hidden');
+    resetTimer();
+
+    const sortedScores = Object.entries(finalScores).sort((a, b) => b[1] - a[1]);
+    const winner = sortedScores.length > 0 ? sortedScores[0][0] : 'Personne';
+    document.getElementById('winnerName').innerText = winner;
+
+    const finalScoresList = document.getElementById('finalScores');
+    finalScoresList.innerHTML = '';
+    sortedScores.forEach(([p, sc], i) => {
+      const li = document.createElement('li');
+      li.textContent = `${i + 1}. ${p} : ${sc} points`;
+      finalScoresList.appendChild(li);
+    });
+
+    document.getElementById('endPopup').classList.remove('hidden');
+  }
+
+  function restartQuiz() {
+    location.reload();
+  }
+  function goToMenu() {
+    window.location.href = 'index.html';
+  }
+
+  // ===================== AUTOCOMPLETION (AVEC DÉDOUBLONNAGE) =====================
+  function autocomplete(input, data) {
+    let currentFocus = -1;
+    let autocompleteJustSelected = false;
+
+    // Normalise la chaîne (minuscules, sans accents, alphanum)
+    function normalizeString(str) {
+      return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+    }
+
+    // Ferme toutes les listes ouvertes
+    function closeAllLists(el) {
+      const items = document.getElementsByClassName("autocomplete-items");
+      for (let i = 0; i < items.length; i++) {
+        if (el !== items[i] && el !== input) {
+          items[i].parentNode.removeChild(items[i]);
+        }
+      }
+    }
+    function addActive(list) {
+      if (!list) return;
+      removeActive(list);
+      if (currentFocus >= list.length) currentFocus = 0;
+      if (currentFocus < 0) currentFocus = list.length - 1;
+      list[currentFocus].classList.add("autocomplete-active");
+    }
+    function removeActive(list) {
+      for (let i = 0; i < list.length; i++) {
+        list[i].classList.remove("autocomplete-active");
+      }
+    }
+
+    // ---------------------
+    // On fait le dédoublonnage ICI
+    // ---------------------
+    // On ne garde qu'un "alt" unique par nom
+    const uniqueAltMap = new Map();
+    data.forEach(anime => {
+      if (anime.alt && !uniqueAltMap.has(anime.alt)) {
+        uniqueAltMap.set(anime.alt, anime);
+      }
+    });
+    // Reconstruit un tableau (dédoublonné)
+    const dedupData = Array.from(uniqueAltMap.values());
+
+    // ---------------------
+    // EVENT "input"
+    // ---------------------
+    input.addEventListener("input", function() {
+      let val = this.value.trim();
+      closeAllLists();
+
+      // Minimum 2 caractères avant de chercher
+      if (val.length < 2) return;
+
+      currentFocus = -1;
+      autocompleteJustSelected = false;
+
+      const listContainer = document.createElement("div");
+      listContainer.setAttribute("id", this.id + "autocomplete-list");
+      listContainer.setAttribute("class", "autocomplete-items");
+      this.parentNode.appendChild(listContainer);
+
+      const normalizedVal = normalizeString(val);
+
+      // Parcours TOUT le tableau dedupData
+      for (let i = 0; i < dedupData.length; i++) {
+        const alt = dedupData[i].alt || "";
+        const normAlt = normalizeString(alt);
+
+        if (normAlt.includes(normalizedVal)) {
+          // On propose cet alt
+          const itemDiv = document.createElement("div");
+          itemDiv.innerHTML = alt + `<input type="hidden" value="${alt}">`;
+
+          itemDiv.addEventListener("click", function() {
+            input.value = this.getElementsByTagName("input")[0].value;
+            closeAllLists();
+            autocompleteJustSelected = true;
+          });
+
+          listContainer.appendChild(itemDiv);
+        }
+      }
+    });
+
+    // ---------------------
+    // EVENT "keydown" (fleches, enter)
+    // ---------------------
+    input.addEventListener("keydown", function(e) {
+      let list = document.getElementById(this.id + "autocomplete-list");
+      if (list) list = list.getElementsByTagName("div");
+
+      if (e.keyCode === 40) {
+        // Fleche bas
+        currentFocus++;
+        addActive(list);
+        e.preventDefault();
+      } else if (e.keyCode === 38) {
+        // Fleche haut
+        currentFocus--;
+        addActive(list);
+        e.preventDefault();
+      } else if (e.keyCode === 13) {
+        // Enter
+        e.preventDefault();
+        if (currentFocus > -1 && list && list[currentFocus]) {
+          list[currentFocus].click();
+        } else {
+          if (autocompleteJustSelected) {
+            submitAnswer();
+            autocompleteJustSelected = false;
+          } else {
+            submitAnswer();
+          }
+        }
+      }
+    });
+
+    document.addEventListener("click", function(e) {
+      closeAllLists(e.target);
+    });
+  }
+
+  // ===================== OUTILS AFFICHAGE =====================
+  function displayStatus(msg) {
+    document.getElementById('roomStatus').innerText = msg;
+    setTimeout(() => {
+      document.getElementById('roomStatus').innerText = '';
+    }, 5000);
+  }
+  function updateStatus(msg) {
+    document.getElementById('statusMessage').innerText = msg;
+  }
+  function activateGameButtons() {
+    document.querySelectorAll('.buttons button').forEach(btn => {
+      btn.disabled = false;
+    });
+  }
+
+  // ===================== SHUFFLE =====================
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const rand = Math.floor(Math.random() * (i + 1));
+      [array[i], array[rand]] = [array[rand], array[i]];
+    }
+  }
+
+  function renderPlayerList() {
+    const playerList = document.getElementById('playerList');
+    playerList.innerHTML = '';
+    players.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = p;
+      if (isChef && p === playerName) {
+        li.textContent += " (Chef)";
+      }
+      playerList.appendChild(li);
+    });
+  }
+
+  function renderScores() {
+    const scoresTableBody = document.getElementById('scoresTableBody');
+    scoresTableBody.innerHTML = '';
+    players.forEach(p => {
+      const row = document.createElement('tr');
+      const nameCell = document.createElement('td');
+      const scoreCell = document.createElement('td');
+
+      nameCell.textContent = p;
+      scoreCell.textContent = scores[p] !== undefined ? scores[p] : 0;
+
+      row.appendChild(nameCell);
+      row.appendChild(scoreCell);
+      scoresTableBody.appendChild(row);
+    });
+  }
+
+</script>
+</body>
+</html>

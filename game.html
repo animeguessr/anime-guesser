@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Choix du Niveau - Anime Guesser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Style global */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+      padding: 2rem 1rem;
+      text-align: center;
+      color: #e0e0e0;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+    }
+    main {
+      flex: 1;
+      padding: 2rem 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .level-selection {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    .level-card {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 1.5rem;
+      width: 220px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .level-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+    }
+    .level-card h2 {
+      margin-bottom: 0.8rem;
+      font-size: 1.3rem;
+      color: #4db8ff;
+    }
+    .level-description {
+      font-size: 0.95rem;
+      color: #b0b0b0;
+    }
+    .navigation-buttons {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .navigation-buttons button {
+      background: #4db8ff;
+      border: none;
+      border-radius: 25px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      color: #121212;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .navigation-buttons button:hover {
+      background: #379ce3;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.85rem;
+      background: #1a1a1a;
+      color: #b0b0b0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Choisissez votre niveau de difficulté</h1>
+  </header>
+
+  <main>
+    <section class="level-selection">
+      <article class="level-card" onclick="startGame('very_easy')">
+        <h2>Très Simple</h2>
+        <p class="level-description">Seulement les animés les plus populaires.</p>
+      </article>
+      <article class="level-card" onclick="startGame('easy')">
+        <h2>Simple</h2>
+        <p class="level-description">Un peu plus de challenge, mais encore abordable.</p>
+      </article>
+      <article class="level-card" onclick="startGame('normal')">
+        <h2>Moyen</h2>
+        <p class="level-description">Préparez-vous à creuser dans votre mémoire.</p>
+      </article>
+      <article class="level-card" onclick="startGame('hard')">
+        <h2>Difficile</h2>
+        <p class="level-description">Des animés moins connus et des OAV inclus.</p>
+      </article>
+      <article class="level-card" onclick="startGame('impossible')">
+        <h2>Impossible</h2>
+        <p class="level-description">Tout est permis. Bonne chance !</p>
+      </article>
+    </section>
+
+    <div class="navigation-buttons">
+      <button id="home-button">Retour au Menu Principal</button>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2025 Anime Guesser. Tous droits réservés.
+  </footer>
+
+  <script>
+    function startGame(level) {
+      window.location.href = `gameplay.html?level=${level}`;
+    }
+    document.getElementById('home-button').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

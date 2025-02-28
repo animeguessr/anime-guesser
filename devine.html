@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Devine le Personnage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Inclure les polices Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Feuille de style CSS -->
+    <style>
+        /* Style global */
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #121212;
+            color: #ffffff;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .character-container {
+            position: relative;
+            height: 300px;
+            background: #1f1f1f;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .character-image {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .option-button {
+            background: #282828;
+            color: #fff;
+            border: none;
+            padding: 15px;
+            font-size: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            flex: 1 1 calc(50% - 30px);
+            max-width: calc(50% - 30px);
+            transition: all 0.3s ease;
+        }
+        .option-button:hover {
+            transform: scale(1.05);
+            background: #3a3a3a;
+        }
+        /* Styles pour les réponses correctes et incorrectes */
+        .correct {
+            background: #28a745 !important;
+        }
+        .wrong {
+            background: #dc3545 !important;
+        }
+        /* Écran de fin de jeu */
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+        .game-over-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .game-over-screen h2 {
+            margin-bottom: 20px;
+        }
+        .game-over-screen button {
+            margin: 10px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        #restart-button {
+            background: #28a745;
+            color: #fff;
+        }
+        #restart-button:hover {
+            background: #218838;
+        }
+        #menu-button {
+            background: #ffc107;
+            color: #000;
+        }
+        #menu-button:hover {
+            background: #e0a800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- En-tête -->
+        <div class="header">
+            <div>Vies : <span id="lives">3</span></div>
+            <div>Personnages trouvés : <span id="score">0</span></div>
+        </div>
+        <!-- Conteneur de l'image -->
+        <div class="character-container">
+            <img id="character-image" src="" alt="Personnage" class="character-image" />
+        </div>
+        <!-- Options -->
+        <div class="options-container" id="options-container">
+            <!-- Les boutons d'options seront générés dynamiquement -->
+        </div>
+        <!-- Écran de fin de jeu -->
+        <div class="game-over-screen" id="game-over-screen">
+            <h2>Jeu Terminé</h2>
+            <p>Votre Score : <span id="final-score">0</span></p>
+            <button id="restart-button">Recommencer</button>
+            <button id="menu-button">Menu Principal</button>
+        </div>
+    </div>
+    <!-- Bibliothèque Color Thief -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
+    <!-- Script du jeu -->
+    <script>
+        // Variables de jeu
+        let lives = 3;
+        let score = 0;
+        let cooldown = false; // Gestion du cooldown global
+
+        // Références aux éléments du DOM
+        const characterImage = document.getElementById('character-image');
+        const optionsContainer = document.getElementById('options-container');
+        const livesDisplay = document.getElementById('lives');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+        const menuButton = document.getElementById('menu-button');
+        const body = document.body;
+
+        // Fonction pour obtenir une couleur contrastante (noir ou blanc) en fonction de la couleur donnée
+        function getContrastingColor(rgb) {
+            const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+            return luminance > 0.5 ? '#000' : '#fff';
+        }
+
+        // Fonction pour assombrir une couleur RGB de 20%
+        function darkenColor(rgb, factor = 0.2) {
+            const r = Math.max(0, Math.floor(rgb[0] * (1 - factor)));
+            const g = Math.max(0, Math.floor(rgb[1] * (1 - factor)));
+            const b = Math.max(0, Math.floor(rgb[2] * (1 - factor)));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Fonction pour changer dynamiquement le fond et les boutons en fonction de l'image actuelle
+        function changeBackground() {
+            const colorThief = new ColorThief();
+
+            // Assurez-vous que l'image est chargée avant d'analyser les couleurs
+            if (characterImage.complete && characterImage.naturalHeight !== 0) {
+                const dominantColor = colorThief.getColor(characterImage);
+                const backgroundGradient = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
+
+                body.style.background = `radial-gradient(circle, ${backgroundGradient}, #000)`;
+
+                // Calculer une couleur plus sombre pour le gradient des boutons
+                const darkerColor = darkenColor(dominantColor, 0.2);
+
+                // Obtenir une couleur de texte contrastante
+                const textColor = getContrastingColor(dominantColor);
+
+                // Sélectionner tous les boutons d'option
+                const buttons = document.querySelectorAll('.option-button');
+                buttons.forEach(button => {
+                    button.style.background = `linear-gradient(135deg, rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]}), ${darkerColor})`;
+                    button.style.color = textColor;
+                });
+            }
+        }
+
+        // Charger un nouveau round
+        async function loadCharacter() {
+            if (cooldown) return; // Empêche le chargement si un cooldown est actif
+            try {
+                // Récupérer les données depuis l'API
+                const res = await fetch('/get-character-game-data');
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+
+                // Mettre à jour l'image du personnage principal
+                const mainCharacter = data.mainCharacter;
+                characterImage.src = mainCharacter.image_url;
+
+                // Mettre à jour le fond et les boutons une fois l'image chargée
+                characterImage.onload = () => {
+                    changeBackground();
+                };
+
+                // Vider les options précédentes
+                optionsContainer.innerHTML = '';
+
+                // Mélanger les options
+                const shuffledOptions = shuffleArray(data.options);
+
+                // Ajouter les nouvelles options
+                shuffledOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.classList.add('option-button');
+                    button.innerHTML = `
+                        <span class="character-name">${option.name}</span>
+                        <br>
+                        <span class="anime-title">${option.anime}</span>
+                    `;
+
+                    // Ajouter les événements de clic
+                    if (option.id === mainCharacter.id) {
+                        button.addEventListener('click', () => handleAnswer(button, true));
+                    } else {
+                        button.addEventListener('click', () => handleAnswer(button, false, mainCharacter));
+                    }
+
+                    optionsContainer.appendChild(button);
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement du personnage :', error);
+            }
+        }
+
+        // Fonction pour mélanger un tableau (Fisher-Yates shuffle)
+        function shuffleArray(array) {
+            let currentIndex = array.length, temporaryValue, randomIndex;
+
+            while (0 !== currentIndex) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
+
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+            }
+            return array;
+        }
+
+        // Gestion des réponses
+        function handleAnswer(button, isCorrect, mainCharacter = null) {
+            if (cooldown) return; // Bloque les clics multiples
+            activateCooldown(); // Active le cooldown global
+
+            if (isCorrect) {
+                button.classList.add('correct');
+                score++;
+                scoreDisplay.textContent = score;
+            } else {
+                button.classList.add('wrong');
+                lives--;
+                livesDisplay.textContent = lives;
+
+                // Mettre en surbrillance la bonne réponse
+                const buttons = optionsContainer.querySelectorAll('.option-button');
+                buttons.forEach(btn => {
+                    if (btn.textContent.includes(mainCharacter.name)) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            if (lives === 0) {
+                setTimeout(() => {
+                    endGame();
+                }, 1000);
+            } else {
+                // Charger le prochain round après un délai
+                setTimeout(() => {
+                    deactivateCooldown(); // Désactive le cooldown après le délai
+                    loadCharacter();
+                }, 1000);
+            }
+        }
+
+        // Terminer le jeu
+        function endGame() {
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.classList.add('active');
+            // Désactiver les boutons pour éviter les interactions
+            disableAllButtons();
+        }
+
+        // Gestion du bouton "Recommencer"
+        restartButton.addEventListener('click', () => {
+            lives = 3;
+            score = 0;
+            livesDisplay.textContent = lives;
+            scoreDisplay.textContent = score;
+            gameOverScreen.classList.remove('active'); // Cacher l'écran "Jeu Terminé"
+            deactivateCooldown(); // Désactive le cooldown
+            loadCharacter();
+        });
+
+        // Retour au menu principal
+        menuButton.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        // Activer le cooldown global
+        function activateCooldown() {
+            cooldown = true;
+            disableAllButtons();
+        }
+
+        // Désactiver le cooldown global
+        function deactivateCooldown() {
+            cooldown = false;
+            enableAllButtons();
+        }
+
+        // Désactiver tous les boutons
+        function disableAllButtons() {
+            const buttons = document.querySelectorAll('.option-button');
+            buttons.forEach(button => {
+                button.disabled = true;
+            });
+        }
+
+        // Réactiver tous les boutons
+        function enableAllButtons() {
+            const buttons = document.querySelectorAll('.option-button');
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
+        }
+
+        // Charger le premier round après que le document soit prêt
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCharacter();
+        });
+    </script>
+</body>
+</html>

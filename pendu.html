@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hangman - Best of Both Worlds</title>
+
+  <style>
+    /* -------------------------------
+       STYLES GLOBAUX / FOND / TITRE
+       ------------------------------- */
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: #1f1f2e; /* gris foncé tirant sur le violet */
+      color: #ffffff;
+      height: 100%;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-top: 40px;
+      color: #ffbf00; /* jaune/orangé */
+      text-align: center;
+      font-size: 2.4rem;
+      letter-spacing: 1px;
+    }
+
+    /* -------------------------------
+       CONTENEUR PRINCIPAL
+       ------------------------------- */
+    .container {
+      margin-top: 40px;
+      padding: 30px;
+      width: 90%;
+      max-width: 800px; /* un peu plus large pour accueillir le SVG */
+      background: #2b2b3d; /* fond sombre */
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* -------------------------------
+       BOUTONS DE DIFFICULTÉ
+       ------------------------------- */
+    .difficulty-buttons {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    .difficulty-btn {
+      background: #3b3b52;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 15px 20px;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      outline: none;
+      min-width: 120px;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .difficulty-btn:hover {
+      background: #474766;
+    }
+    /* Couleurs différenciées selon la difficulté */
+    .difficulty-btn.easy {
+      background: #2ecc71; /* vert */
+      border: none;
+    }
+    .difficulty-btn.easy:hover {
+      background: #27ae60;
+    }
+    .difficulty-btn.medium {
+      background: #f39c12; /* orange */
+      border: none;
+    }
+    .difficulty-btn.medium:hover {
+      background: #d9820f;
+    }
+    .difficulty-btn.hard {
+      background: #e74c3c; /* rouge */
+      border: none;
+    }
+    .difficulty-btn.hard:hover {
+      background: #c0392b;
+    }
+
+    /* -------------------------------
+       AFFICHAGE DES ERREURS + MESSAGE
+       ------------------------------- */
+    .info {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    .info .lives {
+      font-weight: bold;
+      color: #ff5555; /* rouge pour le compteur d'erreurs */
+    }
+    .message {
+      font-size: 1.2rem;
+      font-weight: bold;
+      min-height: 30px; /* évite les sauts d'affichage */
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    /* -------------------------------
+       LE PENDU (SVG)
+       ------------------------------- */
+    .hangman-section {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 30px;
+      width: 100%;
+    }
+
+    /* Pour limiter la taille du SVG dans la mise en page */
+    .hangman-svg {
+      width: 280px;
+      height: 280px;
+      flex-shrink: 0; /* évite que le SVG rapetisse si l'écran est petit */
+    }
+
+    /* On cache les parties du pendu tant qu'elles ne sont pas dévoilées */
+    #head,
+    #torso,
+    #arm-l,
+    #arm-r,
+    #leg-l,
+    #leg-r {
+      display: none;
+    }
+
+    /* -------------------------------
+       LE BLOC TEXTE (lettres + input)
+       ------------------------------- */
+    .text-zone {
+      background: #3b3b52;
+      min-width: 300px;
+      padding: 20px;
+      border-radius: 6px;
+    }
+
+    /* Lettres du mot masqué/dévoilé */
+    .hidden-word {
+      font-size: 3.8rem;
+      letter-spacing: 1.8rem;
+      text-align: center;
+      margin-bottom: 20px;
+      min-height: 40px; /* évite les sauts */
+      word-wrap: break-word;
+    }
+
+    /* Invite "Guess a letter" */
+    .prompt-label {
+      font-size: 1.1rem;
+      margin-right: 10px;
+    }
+
+    .input-letter {
+      font-size: 1.4rem;
+      width: 60px;
+      height: 40px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #2b2b3d;
+      color: #fff;
+      outline: none;
+      text-align: center;
+    }
+    .input-letter:focus {
+      border: 1px solid #999;
+    }
+
+    /* -------------------------------
+       BOUTON RECOMMENCER (non utilisé dans le 1er code,
+       mais si tu en as besoin, tu peux le garder)
+       ------------------------------- */
+    .restart-btn {
+      display: none; /* on pourrait l’activer si besoin */
+      background: #0092ff;
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 20px auto 0 auto;
+      transition: background 0.2s;
+    }
+    .restart-btn:hover {
+      background: #0080e0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Titre principal -->
+  <h1>WELCOME TO HANGER MAN (anime name version)</h1>
+  <h3>le pendu quoi</h3>
+
+  <div class="container">
+
+    <!-- Boutons de difficulté -->
+    <div class="difficulty-buttons" id="difficultyButtons">
+      <button class="difficulty-btn easy" data-diff="easy">Easy</button>
+      <button class="difficulty-btn medium" data-diff="medium">Medium</button>
+      <button class="difficulty-btn hard" data-diff="hard">Hard</button>
+    </div>
+
+    <!-- Infos (erreurs + message) -->
+    <div class="info">
+      Erreurs : <span class="lives" id="lives">0</span>/6
+    </div>
+    <div class="message" id="message"></div>
+
+    <!-- Section pendu + zone texte -->
+    <div class="hangman-section">
+
+      <!-- SVG du pendu (repris du 1er code) -->
+      <svg class="hangman-svg" viewBox="0 0 75 93.8">
+        <path
+          id="structure"
+          d="M85.9 12.5a1.6 1.6 0 001.6-1.6V4.7a1.6 1.6 0 00-1.6-1.6H14.1a1.6 1.6 0 00-1.6 1.6v6.2a1.6 1.6 0 001.6 1.6h4.7v82.8a1.5 1.5 0 001.5 1.6h6.3a1.6 1.6 0 001.5-1.6V39.7l27.2-27.2h7.2v6.4h3.1v-6.4zM25 93.8h-3.1V12.5H25zm3.1-58.5v-5L46 12.5h4.9zm0-9.4V12.5h13.4zM15.6 9.4V6.2h68.8v3.2z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+        <path
+          id="head"
+          d="M64.1 43.8a4.7 4.7 0 004.7-4.7v-4.7a8.1 8.1 0 003.1-6.3v-1.5a7.9 7.9 0 00-6.2-7.7h-3.2a8.1 8.1 0 00-6.3 7.7v1.5a8.2 8.2 0 003.2 6.3v4.7a4.7 4.7 0 004.7 4.7zm1.5-4.7a1.5 1.5 0 01-1.5 1.5 1.6 1.6 0 01-1.6-1.5v-3.2h3.1zm-6.2-12.5a4.7 4.7 0 019.4 0v1.5a4.7 4.7 0 01-9.4 0z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+        <path
+          id="arm-l"
+          d="M42.1 47.9a4.9 4.9 0 006.9 6.9l4.1-4.2-6.8-6.9zm8.8.5l-4.2 4.2a1.6 1.6 0 01-2.4 0 1.8 1.8 0 010-2.5l4.1-4.1z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+        <path
+          id="arm-r"
+          d="M86.1 47.9l-4.2-4.1-2.2 2.2 4.2 4.1a2.1 2.1 0 01.5 1.3 1.8 1.8 0 01-1.8 1.7 1.8 1.8 0 01-1.2-.5l-4.2-4.2-2.2 2.2 4.2 4.2a4.9 4.9 0 106.9-6.9z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+        <path
+          id="leg-l"
+          d="M59.4 81.2h-3.2V62.5h-3.1v18.8a3.9 3.9 0 00-3 4.6 3.8 3.8 0 003.8 3.2h7a1.6 1.6 0 001.6-1.6v-25h-3.1zm0 4.7h-5.5a.8.8 0 01-.8-.7.8.8 0 01.8-.8h5.5z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+        <path
+          id="torso"
+          d="M77.2 48.4l2.5-2.4 2.2-2.2-7.4-7.4a1.4 1.4 0 00-1.1-.5h-4.6v3.2h4l4.7 4.7-2.5 2.4-.5-.4a1.6 1.6 0 00-2.2 0 1.5 1.5 0 00-.4 1.1v12.5H56.2V46.9a1.5 1.5 0 00-1.5-1.6 1.6 1.6 0 00-1.1.5l-.5.4-2.5-2.4 4.7-4.7h4.1v-3.2h-4.7a1.6 1.6 0 00-1.1.5l-7.3 7.3 6.8 6.9v11.9H75V50.6l2.2-2.2z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+        <path
+          id="leg-r"
+          d="M71.9 81.2h-3.1V62.5h-3.2v25a1.6 1.6 0 001.6 1.6h7a3.9 3.9 0 003.9-3.9 4 4 0 00-3.1-3.9V62.5h-3.1zm3.1 4a.7.7 0 01-.8.7h-5.4v-1.5h5.4a.7.7 0 01.8.8z"
+          transform="translate(-12.5 -3.1)"
+          fill="#fff"
+        />
+      </svg>
+
+      <!-- Le bloc "texte" (lettres cachées + input) -->
+      <div class="text-zone">
+        <!-- Lettres du mot -->
+        <div class="hidden-word" id="letters">_ _ _</div>
+
+        <!-- Saisie de la lettre -->
+        <div style="text-align: center;">
+          <label class="prompt-label" for="guessinput">Guess a letter!</label>
+          <input id="guessinput" class="input-letter" type="text" maxlength="1" />
+        </div>
+      </div>
+
+    </div>
+    
+  </div> <!-- fin .container -->
+
+  <script>
+    // URL de l'API
+    const API_URL = 'https://anime-guessr.freeboxos.fr/pendu_getanime';
+
+    // Sélecteurs
+    const difficultyButtons = document.querySelectorAll('#difficultyButtons button');
+    const livesEl           = document.getElementById('lives');
+    const lettersEl         = document.getElementById('letters');
+    const guessInput        = document.getElementById('guessinput');
+    const messageEl         = document.getElementById('message');
+
+    // Parties du pendu à dévoiler (6 au total)
+    const hangmanParts = ['head','torso','arm-l','arm-r','leg-l','leg-r'];
+    const MAX_ERRORS = 6;
+
+    // Variables de jeu
+    let originalWord   = '';
+    let displayedWord  = '';
+    let mistakes       = 0;
+    let gameOver       = false;
+    let guessedLetters = [];
+    let currentDiff    = null;
+
+    // Clic sur un bouton de difficulté => nouvelle partie
+    difficultyButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const diff = btn.getAttribute('data-diff');
+        currentDiff = diff;
+        startNewGame(diff);
+      });
+    });
+
+    // Input de la lettre => on tente direct
+    guessInput.addEventListener('input', () => {
+      if (!gameOver) {
+        const letter = guessInput.value.toLowerCase().trim();
+        guessInput.value = '';
+        // Vérif a-z0-9
+        if (/^[a-z0-9]$/.test(letter)) {
+          tryLetter(letter);
+        }
+      }
+    });
+
+    // Lancer une nouvelle partie
+    async function startNewGame(difficulty) {
+      // Reset
+      originalWord   = '';
+      displayedWord  = '';
+      mistakes       = 0;
+      gameOver       = false;
+      guessedLetters = [];
+
+      // Affichage
+      livesEl.textContent   = '0';
+      messageEl.textContent = '';
+      lettersEl.textContent = '';
+      guessInput.value      = '';
+      guessInput.disabled   = false;
+
+      // Cache toutes les parties du pendu
+      hangmanParts.forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+
+      // Va chercher un anime
+      try {
+        const resp = await fetch(`${API_URL}?difficulty=${difficulty}`);
+        if (!resp.ok) {
+          messageEl.textContent = 'Erreur : impossible de récupérer un anime.';
+          return;
+        }
+        const data = await resp.json();
+        originalWord = data.name || ''; // Par sécurité
+
+        // Générer le mot masqué selon difficulté
+        displayedWord = generateHiddenWord(originalWord, difficulty);
+        lettersEl.textContent = displayedWord;
+
+      } catch (error) {
+        console.error(error);
+        messageEl.textContent = 'Erreur réseau / serveur.';
+      }
+    }
+
+    // Générer le mot masqué
+    function generateHiddenWord(word, diff) {
+      if (!word) return '';
+      let result = '';
+      const len = word.length;
+
+      if (diff === 'easy') {
+        // 1ère + dernière dévoilées
+        for (let i = 0; i < len; i++) {
+          const c = word[i];
+          if (c === ' ' || c === '-') {
+            result += c;
+          } else if (i === 0 || i === len - 1) {
+            result += c;
+          } else {
+            result += '_';
+          }
+        }
+      }
+      else if (diff === 'medium') {
+        // juste la 1ère
+        for (let i = 0; i < len; i++) {
+          const c = word[i];
+          if (c === ' ' || c === '-') {
+            result += c;
+          } else if (i === 0) {
+            result += c;
+          } else {
+            result += '_';
+          }
+        }
+      }
+      else {
+        // hard => rien dévoilé
+        for (let i = 0; i < len; i++) {
+          const c = word[i];
+          if (c === ' ' || c === '-') {
+            result += c;
+          } else {
+            result += '_';
+          }
+        }
+      }
+      return result;
+    }
+
+    // Tenter une lettre
+    function tryLetter(letter) {
+      // Déjà tentée ?
+      if (guessedLetters.includes(letter)) {
+        return;
+      }
+      guessedLetters.push(letter);
+
+      // Lettre présente ?
+      if (originalWord.toLowerCase().includes(letter)) {
+        // On dévoile
+        let newDisp = '';
+        for (let i = 0; i < originalWord.length; i++) {
+          const origChar = originalWord[i];
+          const dispChar = displayedWord[i];
+
+          if (origChar === ' ' || origChar === '-') {
+            newDisp += origChar;
+          }
+          else if (dispChar !== '_') {
+            // déjà révélé
+            newDisp += dispChar;
+          }
+          else {
+            if (origChar.toLowerCase() === letter) {
+              newDisp += origChar; // on dévoile
+            } else {
+              newDisp += '_';
+            }
+          }
+        }
+        displayedWord = newDisp;
+        lettersEl.textContent = displayedWord;
+
+        // Gagné ?
+        if (!displayedWord.includes('_')) {
+          gameOver = true;
+          messageEl.textContent = 'Bravo, vous avez trouvé !';
+          guessInput.disabled = true;
+        }
+      }
+      else {
+        // Mauvaise lettre => +1 erreur
+        mistakes++;
+        livesEl.textContent = mistakes.toString();
+
+        // Affiche la partie du pendu correspondante
+        if (mistakes <= hangmanParts.length) {
+          const partId = hangmanParts[mistakes - 1];
+          document.getElementById(partId).style.display = 'block';
+        }
+
+        // Perdu ?
+        if (mistakes >= MAX_ERRORS) {
+          gameOver = true;
+          messageEl.textContent = `Dommage, c'était "${originalWord}"...`;
+          guessInput.disabled = true;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
